@@ -10,7 +10,7 @@ class Store:
     client: MongoClient  # MongoDB 客户端
 
 
-    def __init__(self, db_path):
+    def __init__(self):
         # SQL-version ：初始化数据库
         # self.database = os.path.join(db_path, "be.db")
         # self.init_tables()
@@ -20,6 +20,7 @@ class Store:
         self.client = MongoClient('mongodb://localhost:27017/')  # 连接到本地 MongoDB 服务
         self.database = self.client['be']  # 设置数据库的名称
         self.init_collections()  # 调用初始化集合的方法  
+        print("连接成功！")
 
     # SQL-version ：初始化数据表
     # def init_tables(self):
