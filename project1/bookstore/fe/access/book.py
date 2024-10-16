@@ -32,12 +32,13 @@ class Book:
 class BookDB:
     def __init__(self, large: bool = False):
         parent_path = os.path.dirname(os.path.dirname(__file__))
-        self.db_s = os.path.join(parent_path, "data/book.db")
-        self.db_l = os.path.join(parent_path, "data/book_lx.db")
-        if large:
-            self.book_db = self.db_l
-        else:
-            self.book_db = self.db_s
+        self.db_s = "C:/Users/86182/Desktop/DBProject1/DataBase_Bookstore/project1/bookstore/fe/data/book.db"
+        self.db_l = "C:/Users/86182/Desktop/DBProject1/DataBase_Bookstore/project1/bookstore/fe/data/book_lx.db"
+        # if large:
+        #     self.book_db = self.db_l
+        # else:
+        #     self.book_db = self.db_s
+        self.book_db = self.db_s
 
     def get_book_count(self):
         conn = sqlite.connect(self.book_db)
