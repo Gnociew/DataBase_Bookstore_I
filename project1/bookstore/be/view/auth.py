@@ -29,6 +29,7 @@ def logout():
 
 @bp_auth.route("/register", methods=["POST"])
 def register():
+    print("be.auth.register")
     user_id = request.json.get("user_id", "")
     password = request.json.get("password", "")
     u = user.User()

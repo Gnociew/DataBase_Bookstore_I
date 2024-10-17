@@ -20,7 +20,7 @@ class Store:
         self.client = MongoClient('mongodb://localhost:27017/')  # 连接到本地 MongoDB 服务
         self.database = self.client['be']  # 设置数据库的名称
         self.init_collections()  # 调用初始化集合的方法  
-        print("连接成功！")
+        print("initialize successfully!")
 
     # SQL-version ：初始化数据表
     # def init_tables(self):
@@ -61,6 +61,7 @@ class Store:
 
     # MongoDB-version ：初始化集合
     def init_collections(self):
+        print("init collections ing")
         # 初始化 MongoDB 集合
         try:
             # 初始集合们并创建索引（创建集合时不需要初始化文档的内容）
@@ -73,6 +74,7 @@ class Store:
             self.orders_collection = self.database['orders']
             self.orders_collection.create_index("order_id", unique=True)
 
+
         except Exception as e:
             logging.error(e)  # 记录错误信息
 
@@ -82,7 +84,7 @@ class Store:
 
     # MongoDB-version
     def get_db_conn(self):
-        return self.client
+        return self.database
 
 
 
@@ -94,11 +96,25 @@ init_completed_event = threading.Event()
 
 # 初始化数据库
 def init_database():
+    print("store.py init db")
     global database_instance
     database_instance = Store()
+    print("Database instance initialized successfully")
+
+    # 获取数据库连接
+    db = database_instance.get_db_conn()
+    # 确保 db 是一个有效的 Database 实例
+    print(f"DB type: {type(db)}")  # 输出 db 类型
+    
+
 
 
 # 获取数据库连接
 def get_db_conn():
+    print("arrive at store.py get_db_conn")
     global database_instance
-    return database_instance.get_db_conn()
+    if database_instance is None:
+        print("Database instance is not initialized.")
+    else:
+        print(f"Database instance type: {type(database_instance)}")  # 打印类型
+    return database_instance.get_db_conn() if database_instance else None

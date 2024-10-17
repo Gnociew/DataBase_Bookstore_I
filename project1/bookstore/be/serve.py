@@ -32,6 +32,7 @@ def be_run():
     parent_path = os.path.dirname(this_path)
     log_file = os.path.join(parent_path, "app.log")
     #init_database(parent_path)
+    print("begin to init database")
     init_database()
 
     # 配置日志

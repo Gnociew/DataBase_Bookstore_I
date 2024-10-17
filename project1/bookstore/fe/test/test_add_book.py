@@ -16,6 +16,8 @@ class TestAddBook:
         self.seller = register_new_seller(self.seller_id, self.password)
 
         code = self.seller.create_store(self.store_id)
+        print("错误检查：")
+        print(code)
         assert code == 200
         book_db = book.BookDB(conf.Use_Large_DB)
         self.books = book_db.get_book_info(0, 2)
