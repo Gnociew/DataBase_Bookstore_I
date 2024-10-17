@@ -23,9 +23,23 @@ class Buyer:
         # print(simplejson.dumps(json))
         url = urljoin(self.url_prefix, "new_order")
         headers = {"token": self.token}
-        r = requests.post(url, headers=headers, json=json)
-        response_json = r.json()
-        return r.status_code, response_json.get("order_id")
+        # 发起 POST 请求
+        try:
+            r = requests.post(url, headers=headers, json=json)
+            response_json = r.json()
+
+            # 输出调试信息
+            print(f"Request URL: {url}")
+            print(f"Request JSON: {json}")
+            print(f"Response Status Code: {r.status_code}")
+            print(f"Response JSON: {response_json}")
+
+            return r.status_code, response_json.get("order_id")
+
+        except Exception as e:
+            # 捕获异常并输出调试信息
+            print(f"Exception occurred: {str(e)}")
+            return 530, None
 
     def payment(self, order_id: str):
         json = {
@@ -35,7 +49,13 @@ class Buyer:
         }
         url = urljoin(self.url_prefix, "payment")
         headers = {"token": self.token}
+        # 打印请求的 URL 和 JSON 数据
+        print(f"Request URL: {url}")
+        print(f"Request JSON: {json}")
         r = requests.post(url, headers=headers, json=json)
+        # 打印响应状态和内容
+        print(f"Response Status Code: {r.status_code}")
+        print(f"Response Content: {r.text}")
         return r.status_code
 
     def add_funds(self, add_value: str) -> int:

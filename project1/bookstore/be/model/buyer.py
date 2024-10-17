@@ -21,7 +21,11 @@ class Buyer(db_conn.DBConn):
                 return error.error_non_exist_store_id(store_id) + (order_id,)
             
             # 创建唯一订单ID
-            uid = "{}_{}_{}".format(user_id, store_id, str(uuid.uuid1()))
+            order_id = "{}_{}_{}".format(user_id, store_id, str(uuid.uuid1()))
+
+            # 创建订单详情列表
+            print("*************************************")
+            order_details = []
 
             # 遍历每本书，处理库存和订单详情
             for book_id, count in id_and_count:
@@ -43,12 +47,14 @@ class Buyer(db_conn.DBConn):
                     {"store_id": store_id, "inventory.book_id": book_id},
                     {"inventory.$": 1}
                 )
-                if book is None:
+                if book is None or not book.get('inventory'):
                     return error.error_non_exist_book_id(book_id) + (order_id,)
 
-                stock_level = book['inventory'][0]['stock_level']
-                book_info_json = json.loads(book['inventory'][0]['book_info'])
-                price = book_info_json.get("price")
+                # 获取库存和价格信息
+                # 确保inventory不为空，然后安全地访问元素
+                stock_level = book['inventory'][0]['stock_level'] # 库存数量
+                book_info_json = json.loads(book['inventory'][0]['book_info']) # 图书信息
+                price = book_info_json.get("price") # 图书价格
 
                 # 检查库存是否足够
                 if stock_level < count:
@@ -59,13 +65,6 @@ class Buyer(db_conn.DBConn):
             #         "WHERE store_id = ? and book_id = ? and stock_level >= ?; ",
             #         (count, store_id, book_id, count),
             #     )
-
-                # 更新库存
-                self.stores_collection.update_one(
-                    {"store_id": store_id, "inventory.book_id": book_id},
-                    {"$set": {"inventory.$.stock_level": stock_level - count}}  # 减少库存
-                )
-
             #     if cursor.rowcount == 0:
             #         return error.error_stock_level_low(book_id) + (order_id,)
 
@@ -82,17 +81,34 @@ class Buyer(db_conn.DBConn):
             # )
             # self.conn.commit()
 
-                # 插入订单详情
-                self.order_details_collection.insert_one({
-                    "order_id": uid,
+                # 添加订单详情到列表中
+                order_details.append({
                     "book_id": book_id,
                     "count": count,
                     "price": price
                 })
-            order_id = uid
 
-        except BaseException as e:
-            logging.info("530, {}".format(str(e)))
+            # 更新库存并插入订单
+            for detail in order_details:
+                book_id = detail['book_id']
+                count = detail['count']
+
+                # 更新库存
+                self.stores_collection.update_one(
+                    {"store_id": store_id, "inventory.book_id": book_id},
+                    {"$set": {"inventory.$.stock_level": stock_level - count}}  # 减少库存
+                )
+
+            # 插入订单到 orders 集合中
+            self.orders_collection.insert_one({
+                "order_id": order_id,  # 订单ID
+                "user_id": user_id,  # 用户ID
+                "store_id": store_id,  # 商店ID
+                "order_details": order_details  # 订单详情
+            })
+
+        except Exception as e:
+            print("111111111111111111111111")
             return 530, "{}".format(str(e)), ""
 
         return 200, "ok", order_id
@@ -113,6 +129,7 @@ class Buyer(db_conn.DBConn):
             # store_id = row[2]
 
             # 查找订单
+            logging.info(f"开始处理支付请求：用户ID={user_id}, 订单ID={order_id}")
             order = self.orders_collection.find_one({"order_id": order_id})
             if order is None:
                 return error.error_invalid_order_id(order_id)
@@ -122,6 +139,7 @@ class Buyer(db_conn.DBConn):
 
             # 检查用户身份
             if buyer_id != user_id:
+                logging.error(f"无效的订单ID：{order_id}")
                 return error.error_authorization_fail()
 
             # cursor = conn.execute(
@@ -137,9 +155,14 @@ class Buyer(db_conn.DBConn):
             # 获取用户信息以检查余额和密码
             user = self.users_collection.find_one({"user_id": buyer_id}, {"balance": 1, "password": 1})
             if user is None:
+                logging.error(f"用户不存在：用户ID={buyer_id}")
                 return error.error_non_exist_user_id(buyer_id)
+
             balance = user['balance']
+            logging.info(f"用户余额：{balance}")
+
             if password != user['password']:
+                logging.error(f"密码验证失败：用户ID={buyer_id}")
                 return error.error_authorization_fail()
 
             # cursor = conn.execute(
@@ -157,9 +180,12 @@ class Buyer(db_conn.DBConn):
             if store is None:
                 return error.error_non_exist_store_id(store_id)
 
-            seller_id = store['user_id']  # 获取卖家ID
+            # 查找拥有该商店的用户（卖家）
+            seller = self.users_collection.find_one({"stores.store_id": store_id})
+            seller_id = seller['user_id']
 
             if not self.user_id_exist(seller_id):
+                logging.error(f"商店不存在：商店ID={store_id}")
                 return error.error_non_exist_user_id(seller_id)
 
             # cursor = conn.execute(
@@ -173,10 +199,13 @@ class Buyer(db_conn.DBConn):
             #     total_price = total_price + price * count
 
              # 计算订单总价
-            order_details = self.order_details_collection.find({"order_id": order_id})
+            order_details = self.orders_collection.find({"order_id": order_id})
             total_price = sum(detail['count'] * detail['price'] for detail in order_details)
+            logging.info(f"订单总价：{total_price}")
 
+            # 检查用户余额是否足够支付订单
             if balance < total_price:
+                logging.error(f"余额不足：用户ID={buyer_id}, 订单总价={total_price}, 余额={balance}")
                 return error.error_not_sufficient_funds(order_id)
 
             # cursor = conn.execute(
@@ -214,25 +243,30 @@ class Buyer(db_conn.DBConn):
                 {"user_id": buyer_id},
                 {"$set": {"balance": balance - total_price}}  # 扣除余额
             )
+            logging.info(f"买家余额更新成功：扣除金额={total_price}")
 
             # 更新卖家余额
             seller = self.users_collection.find_one({"user_id": seller_id})
             if seller is None:
+                logging.error(f"卖家不存在：卖家ID={seller_id}")
                 return error.error_non_exist_user_id(seller_id)
 
             self.users_collection.update_one(
                 {"user_id": seller_id},
                 {"$set": {"balance": seller['balance'] + total_price}}  # 增加余额
             )
+            logging.info(f"卖家余额更新成功：增加金额={total_price}")
 
             # 删除订单和订单详情
             self.orders_collection.delete_one({"order_id": order_id})
-            self.order_details_collection.delete_many({"order_id": order_id})
+            logging.info(f"订单删除成功：订单ID={order_id}")
+            #self.orders_collection.delete_many({"order_id": order_id})
 
         # except sqlite.Error as e:
         #     return 528, "{}".format(str(e))
 
-        except BaseException as e:
+        except Exception as e:
+            logging.error(f"支付过程中出现异常：{str(e)}")
             return 530, "{}".format(str(e))
 
         return 200, "ok"
@@ -261,21 +295,21 @@ class Buyer(db_conn.DBConn):
         #     return 528, "{}".format(str(e))
 
         # 查找用户信息
-            user = self.users_collection.find_one({"user_id": user_id}, {"password": 1})
+            user = self.users_collection.find_one({"user_id": user_id}, {"balance": 1, "password": 1})
             if user is None:
                 return error.error_authorization_fail()
 
-            # 验证密码
-            if user['password'] != password:
-                return error.error_authorization_fail()
-
             # 增加用户余额
-            self.users_collection.update_one(
+            result = self.users_collection.update_one(
                 {"user_id": user_id},
                 {"$inc": {"balance": add_value}}  # 增加指定金额
             )
 
-        except BaseException as e:
+            # 检查更新是否成功
+            if result.modified_count == 0:
+               return error.error_non_exist_user_id(user_id)
+
+        except Exception as e:
             return 530, "{}".format(str(e))
 
         return 200, "ok"

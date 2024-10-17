@@ -3,12 +3,12 @@ from be.model import store
 
 class DBConn:
     def __init__(self):
-        print("arrive at db_conn init")
+        # print("arrive at db_conn init")
         # 获取 MongoDB 客户端连接
         self.conn = store.get_db_conn()
 
         if self.conn is not None:
-            print("Successfully connected to the database")
+            # print("Successfully connected to the database")
             self.users_collection = self.conn['users']
             self.stores_collection = self.conn['stores']
             self.orders_collection = self.conn['orders']
