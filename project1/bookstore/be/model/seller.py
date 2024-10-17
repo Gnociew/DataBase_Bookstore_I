@@ -33,7 +33,7 @@ class Seller(db_conn.DBConn):
         #     return 528, "{}".format(str(e))
 
             # 插入新书籍到指定商店的库存中
-            self.stores_collection.update_one(
+            result = self.stores_collection.update_one(
                 {"store_id": store_id},
                 {"$push": {
                     "inventory": {
@@ -43,6 +43,10 @@ class Seller(db_conn.DBConn):
                     }
                 }}
             )
+
+            # 检查更新是否成功
+            if result.modified_count == 0:
+                return error.error_non_exist_store_id(store_id)
 
         except BaseException as e:
             return 530, "{}".format(str(e))

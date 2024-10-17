@@ -128,8 +128,6 @@ class Buyer(db_conn.DBConn):
             # buyer_id = row[1]
             # store_id = row[2]
 
-            # 查找订单
-            logging.info(f"开始处理支付请求：用户ID={user_id}, 订单ID={order_id}")
             order = self.orders_collection.find_one({"order_id": order_id})
             if order is None:
                 return error.error_invalid_order_id(order_id)
@@ -139,7 +137,6 @@ class Buyer(db_conn.DBConn):
 
             # 检查用户身份
             if buyer_id != user_id:
-                logging.error(f"无效的订单ID：{order_id}")
                 return error.error_authorization_fail()
 
             # cursor = conn.execute(
@@ -182,6 +179,8 @@ class Buyer(db_conn.DBConn):
 
             # 查找拥有该商店的用户（卖家）
             seller = self.users_collection.find_one({"stores.store_id": store_id})
+            if seller is None:
+                return error.error_non_exist_store_id(store_id)
             seller_id = seller['user_id']
 
             if not self.user_id_exist(seller_id):
@@ -199,7 +198,7 @@ class Buyer(db_conn.DBConn):
             #     total_price = total_price + price * count
 
              # 计算订单总价
-            order_details = self.orders_collection.find({"order_id": order_id})
+            order_details = list(self.orders_collection.find({"order_id": order_id}))
             total_price = sum(detail['count'] * detail['price'] for detail in order_details)
             logging.info(f"订单总价：{total_price}")
 
@@ -292,11 +291,15 @@ class Buyer(db_conn.DBConn):
 
         #     self.conn.commit()
         # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
+        #  return 528, "{}".format(str(e))
 
-        # 查找用户信息
-            user = self.users_collection.find_one({"user_id": user_id}, {"balance": 1, "password": 1})
+            # 查找用户信息
+            user = self.users_collection.find_one({"user_id": user_id}, {"password": 1})
             if user is None:
+                return error.error_authorization_fail()
+
+            # 密码验证
+            if user['password'] != password:
                 return error.error_authorization_fail()
 
             # 增加用户余额
