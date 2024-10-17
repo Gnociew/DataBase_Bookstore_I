@@ -199,8 +199,13 @@ class Buyer(db_conn.DBConn):
             #     total_price = total_price + price * count
 
              # 计算订单总价
-            order_details = self.orders_collection.find({"order_id": order_id})
+            order = self.orders_collection.find_one({"order_id": order_id})
+            if order is None:
+                return error.error_invalid_order_id(order_id)
+
+            order_details = order.get('order_details', [])
             total_price = sum(detail['count'] * detail['price'] for detail in order_details)
+
             logging.info(f"订单总价：{total_price}")
 
             # 检查用户余额是否足够支付订单
