@@ -4,6 +4,7 @@ import logging
 import sqlite3 as sqlite
 from be.model import error
 from be.model import db_conn
+from datetime import datetime, timedelta
 
 from be.model.store import init_database
 
@@ -76,12 +77,14 @@ class User(db_conn.DBConn):
         # except sqlite.Error:
         #     return error.error_exist_user_id(user_id)
         # return 200, "ok"
+            initial_credit = 100  # 设置初始信用分
             self.users_collection.insert_one({
                 "user_id": user_id,
                 "password": password,
                 "balance": 0,
                 "token": token,
                 "terminal": terminal,
+                "credit": initial_credit,
                 "stores": []
             })
         
@@ -237,3 +240,119 @@ class User(db_conn.DBConn):
         except Exception as e:
             return 530, "{}".format(str(e))
         return 200, "ok"
+
+    # 检查信用分是否足够
+    def check_credit(self, user_id: str) -> (int, str):
+        user = self.users_collection.find_one({"user_id": user_id})
+        if user is None:
+            return error.error_authorization_fail()
+
+        if user.get("credit") < 5:
+            return 400, "Insufficient credit to cancel the order."
+
+        return 200, "Credit is sufficient."
+
+    # 更新用户的信用分
+    def update_credit(self, user_id: str, points: int) -> (int, str):
+        # 先检查信用分是否足够
+        code, message = self.check_credit(user_id)
+        if code != 200:
+            return code, message  # 若信用分不足，则返回检查结果
+
+        try:
+            result = self.users_collection.update_one(
+                {"user_id": user_id},
+                {"$inc": {"credit_score": -points}}  # 扣除信用分
+            )
+            if result.modified_count == 0:
+                return error.error_authorization_fail()  # 用户未找到
+        except Exception as e:
+            return 530, "{}".format(str(e))
+        return 200, "Credit score update successfully."
+
+    # 用户确认收货
+    def confirm_receipt(self, user_id: str, order_id: str) -> (int, str):
+        try:
+            # 查找未发货的订单，确保订单属于该用户
+            unfinished_order = self.orders_collection.find_one({
+                "order_id": order_id,
+                "user_id": user_id,
+                "status": "未发货"
+            })
+
+            if not unfinished_order:
+                return 404, "No valid unfulfilled orders were found or the order was confirmed to be received."
+
+            # 更新订单状态为已确认收货
+            self.orders_collection.update_one(
+                {"order_id": order_id},
+                {"$set": {"status": "确认收货", "received_time": datetime.now()}}  # 更新状态和收货时间
+            )
+
+            # 将订单插入到历史订单集合中
+            self.finished_orders_collection.insert_one({
+                "order_id": unfinished_order["order_id"],
+                "user_id": unfinished_order["user_id"],
+                "store_id": unfinished_order["store_id"],
+                "create_time": unfinished_order["create_time"],
+                "pay_time": unfinished_order["pay_time"],
+                "shipping_time": unfinished_order["shipping_time"],
+                "received_time": datetime.now(),  # 设置确认收货时间
+                "status": "确认收货",
+                "order_details": unfinished_order["order_details"]
+            })
+
+            # 从进行中订单集合中删除该订单
+            self.orders_collection.delete_one({"order_id": order_id})
+
+        except Exception as e:
+            return 530, "Error: {}".format(str(e))
+
+        return 200, "Confirm that the receipt is successful."
+
+    # 平台自动确认收货:检查已发货订单是否超过14天，超过则自动确认收货
+    def auto_confirm_receipt(self) -> (int, str):
+        try:
+            # 当前时间减去14天
+            fourteen_days_ago = datetime.now() - timedelta(days=14)
+
+            # 找出发货超过14天且未确认收货的订单
+            orders_to_confirm = self.unfinished_orders_collection.find({
+                "status": "已发货",
+                "shipping_time": {"$lte": fourteen_days_ago}
+            })
+
+            # 判断是否有符合条件的订单
+            if not orders_to_confirm.count():
+                return 404, "No orders eligible for automatic receipt confirmation were found."
+
+            # 遍历符合条件的订单并更新状态
+            for order in orders_to_confirm:
+                order_id = order['order_id']
+
+                # 更新订单信息，确认收货
+                self.unfinished_orders_collection.update_one(
+                    {"order_id": order_id},
+                    {"$set": {"status": "确认收货", "received_time": datetime.now()}}
+                )
+
+                # 将订单移动到历史订单集合
+                self.finished_orders_collection.insert_one({
+                    "order_id": order["order_id"],
+                    "user_id": order["user_id"],
+                    "store_id": order["store_id"],
+                    "create_time": order["create_time"],
+                    "pay_time": order["pay_time"],
+                    "shipping_time": order["shipping_time"],
+                    "received_time": datetime.now(),
+                    "status": "确认收货",
+                    "order_details": order["order_details"]
+                })
+
+                # 从进行中订单集合中删除该订单
+                self.unfinished_orders_collection.delete_one({"order_id": order_id})
+
+            return 200, "Automatic confirmation of receipt was successful for eligible orders."
+
+        except Exception as e:
+            return 530, "Error during automatic confirmation of receipt: {}".format(str(e))
