@@ -5,6 +5,9 @@ from be.model import error
 from be.model import db_conn
 from datetime import datetime, timedelta
 
+from be.model.store import init_database
+
+
 def jwt_encode(user_id: str, terminal: str) -> str:
     encoded = jwt.encode(
         {"user_id": user_id, "terminal": terminal, "timestamp": time.time()},
