@@ -267,5 +267,4 @@ class User(db_conn.DBConn):
             return 200, "Automatic confirmation of receipt was successful for eligible orders."
 
         except Exception as e:
-            print(f"Exception occurred: {str(e)}")  # 打印异常信息
             return 530, "Error during automatic confirmation of receipt: {}".format(str(e))
