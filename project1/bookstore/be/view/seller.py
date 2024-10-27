@@ -26,7 +26,8 @@ def seller_add_book():
 
     s = seller.Seller()
     code, message = s.add_book(
-        user_id, store_id, book_info.get("id"), json.dumps(book_info), book_info.get("title"),book_info.get("price"),stock_level
+        user_id, store_id, book_info.get("id"), json.dumps(book_info), book_info.get("title"), book_info.get("price"),
+        stock_level
     )
 
     return jsonify({"message": message}), code
@@ -64,3 +65,11 @@ def get_book_rank10():
     response = jsonify({"book_info": book_info})
     response.status_code = code  # 设置响应的状态码
     return response  # 直接返回响应对象
+
+@bp_seller.route("/mark_order_shipped", methods=["POST"])
+def mark_order_shipped():
+    order_id = request.json.get("order_id")
+    s = seller.Seller()
+    code, message = s.mark_order_shipped(order_id)
+    return jsonify({"message": message}), code
+
