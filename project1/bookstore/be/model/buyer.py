@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
-        self.user_model = user()
 
     def new_order(
         self, user_id: str, store_id: str, id_and_count: [(str, int)]
@@ -269,12 +268,12 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             )
             logging.info(f"卖家余额更新成功：增加金额={total_price}")
 
-            # 更新订单状态为已支付未发货，设置支付时间
+            # 更新订单状态为未发货，设置支付时间
             self.unfinished_orders_collection.update_one(
                 {"order_id": order_id},
                 {
                     "$set": {
-                        "status": "已支付未发货",  # 更新状态
+                        "status": "未发货",  # 更新状态
                         "pay_time": datetime.now()  # 设置支付时间
                     }
                 }
