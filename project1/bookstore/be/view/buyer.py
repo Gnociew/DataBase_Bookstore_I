@@ -2,6 +2,8 @@ from flask import Blueprint
 from flask import request
 from flask import jsonify
 from be.model.buyer import Buyer
+import json
+from bson import ObjectId
 
 bp_buyer = Blueprint("buyer", __name__, url_prefix="/buyer")
 
@@ -44,3 +46,26 @@ def add_funds():
     b = Buyer()
     code, message = b.add_funds(user_id, password, add_value)
     return jsonify({"message": message}), code
+
+def convert_objectid_to_str(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    elif isinstance(obj, dict):
+        return {k: convert_objectid_to_str(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_objectid_to_str(i) for i in obj]
+    return obj
+
+@bp_buyer.route("/search_books", methods=["POST"])
+def search_books():
+    key_words = request.json.get("key_words")
+    # print("beview",key_words)
+    b = Buyer()
+    code, book_info = b.search_books(key_words)
+    # print("view",code)
+    # print("view_book_info", book_info)
+    # book_info_json = json.dumps(book_info)
+    book_info = convert_objectid_to_str(book_info)
+    response = jsonify({"book_info": book_info})
+    response.status_code = code  # 设置响应的状态码
+    return response  # 直接返回响应对象
