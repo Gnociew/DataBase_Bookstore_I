@@ -5,12 +5,11 @@ import logging
 from be.model import db_conn
 from be.model import error
 from datetime import datetime, timedelta
-
+from be.model.user import User
 
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
-        self.user_model = user()
 
     def new_order(
         self, user_id: str, store_id: str, id_and_count: [(str, int)]
@@ -263,12 +262,12 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             )
             logging.info(f"卖家余额更新成功：增加金额={total_price}")
 
-            # 更新订单状态为已支付未发货，设置支付时间
+            # 更新订单状态为未发货，设置支付时间
             self.unfinished_orders_collection.update_one(
                 {"order_id": order_id},
                 {
                     "$set": {
-                        "status": "已支付未发货",  # 更新状态
+                        "status": "未发货",  # 更新状态
                         "pay_time": datetime.now()  # 设置支付时间
                     }
                 }
@@ -370,8 +369,8 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 # 未支付订单且未超时，不扣信用分
                 points_deduction = 0
 
-            elif order_status == "已支付未发货":
-                # 已支付未发货，扣除3分信用分
+            elif order_status == "未发货":
+                # 未发货，扣除3分信用分
                 points_deduction = 3
 
             elif order_status == "已发货":
@@ -404,7 +403,8 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
             # 调用 user 类的方法更新信用分数
             if points_deduction > 0:
-                credit_code, credit_msg = self.user_model.update_credit(user_id, points_deduction)
+                user = User()
+                credit_code, credit_msg = user.update_credit(user_id, points_deduction)
                 if credit_code != 200:
                     return credit_code, credit_msg
 

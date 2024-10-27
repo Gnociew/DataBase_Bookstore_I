@@ -72,15 +72,6 @@ class User(db_conn.DBConn):
         return 200, "ok"
 
     def check_password(self, user_id: str, password: str) -> (int, str):
-        # cursor = self.conn.execute(
-        #     "SELECT password from user where user_id=?", (user_id,)
-        # )
-        # row = cursor.fetchone()
-        # if row is None:
-        #     return error.error_authorization_fail()
-
-        # if password != row[0]:
-        #     return error.error_authorization_fail()
         user = self.users_collection.find_one({"user_id": user_id})
         if user is None:
             return error.error_authorization_fail()
@@ -98,18 +89,6 @@ class User(db_conn.DBConn):
                 return code, message, ""
 
             token = jwt_encode(user_id, terminal)
-        #     cursor = self.conn.execute(
-        #         "UPDATE user set token= ? , terminal = ? where user_id = ?",
-        #         (token, terminal, user_id),
-        #     )
-        #     if cursor.rowcount == 0:
-        #         return error.error_authorization_fail() + ("",)
-        #     self.conn.commit()
-        # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e)), ""
-        # except BaseException as e:
-        #     return 530, "{}".format(str(e)), ""
-        # return 200, "ok", token
             self.users_collection.update_one(
                 {"user_id": user_id},
                 {"$set": {"token": token, "terminal": terminal}}
@@ -127,20 +106,6 @@ class User(db_conn.DBConn):
 
             terminal = "terminal_{}".format(str(time.time()))
             dummy_token = jwt_encode(user_id, terminal)
-
-        #     cursor = self.conn.execute(
-        #         "UPDATE user SET token = ?, terminal = ? WHERE user_id=?",
-        #         (dummy_token, terminal, user_id),
-        #     )
-        #     if cursor.rowcount == 0:
-        #         return error.error_authorization_fail()
-
-        #     self.conn.commit()
-        # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
-        # except BaseException as e:
-        #     return 530, "{}".format(str(e))
-        # return 200, "ok"
             self.users_collection.update_one(
                 {"user_id": user_id},
                 {"$set": {"token": dummy_token, "terminal": terminal}}
@@ -154,17 +119,6 @@ class User(db_conn.DBConn):
             code, message = self.check_password(user_id, password)
             if code != 200:
                 return code, message
-
-        #     cursor = self.conn.execute("DELETE from user where user_id=?", (user_id,))
-        #     if cursor.rowcount == 1:
-        #         self.conn.commit()
-        #     else:
-        #         return error.error_authorization_fail()
-        # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
-        # except BaseException as e:
-        #     return 530, "{}".format(str(e))
-        # return 200, "ok"
             result = self.users_collection.delete_one({"user_id": user_id})
             if result.deleted_count == 1:
                 return 200, "ok"
@@ -184,19 +138,6 @@ class User(db_conn.DBConn):
 
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-        #     cursor = self.conn.execute(
-        #         "UPDATE user set password = ?, token= ? , terminal = ? where user_id = ?",
-        #         (new_password, token, terminal, user_id),
-        #     )
-        #     if cursor.rowcount == 0:
-        #         return error.error_authorization_fail()
-
-        #     self.conn.commit()
-        # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
-        # except BaseException as e:
-        #     return 530, "{}".format(str(e))
-        # return 200, "ok"
             self.users_collection.update_one(
                 {"user_id": user_id},
                 {"$set": {"password": new_password, "token": token, "terminal": terminal}}
@@ -211,7 +152,7 @@ class User(db_conn.DBConn):
         if user is None:
             return error.error_authorization_fail()
 
-        if user.get("credit") < 5:
+        if user.get("credit") < 3:
             return 400, "Insufficient credit to cancel the order."
 
         return 200, "Credit is sufficient."
@@ -234,6 +175,7 @@ class User(db_conn.DBConn):
             return 530, "{}".format(str(e))
         return 200, "Credit score update successfully."
 
+    # 设置信用分
     def set_credit_score(self, user_id: str, score: int):
         try:
             self.users_collection.update_one(

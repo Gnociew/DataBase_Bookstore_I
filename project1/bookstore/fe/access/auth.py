@@ -42,3 +42,17 @@ class Auth:
         r = requests.post(url, json=json)
         return r.status_code
 
+    # 为更新信用分添加一个请求
+    def update_credit(self, user_id: str, points: int) -> int:
+        json = {"user_id": user_id, "points": points}
+        url = urljoin(self.url_prefix, "update_credit")
+        r = requests.post(url, json=json)
+        return r.status_code
+
+    # 为设置信用分添加一个请求
+    def set_credit_score(self, user_id: str, score: int) -> int:
+        json = {"user_id": user_id, "score": score}
+        url = urljoin(self.url_prefix, "set_credit_score")
+        r = requests.post(url, json=json)
+        return r.status_code
+
