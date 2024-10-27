@@ -262,12 +262,12 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             )
             logging.info(f"卖家余额更新成功：增加金额={total_price}")
 
-            # 更新订单状态为未发货，设置支付时间
+            # 更新订单状态为已支付未发货，设置支付时间
             self.unfinished_orders_collection.update_one(
                 {"order_id": order_id},
                 {
                     "$set": {
-                        "status": "未发货",  # 更新状态
+                        "status": "已支付未发货",  # 更新状态
                         "pay_time": datetime.now()  # 设置支付时间
                     }
                 }
@@ -369,8 +369,8 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 # 未支付订单且未超时，不扣信用分
                 points_deduction = 0
 
-            elif order_status == "未发货":
-                # 未发货，扣除3分信用分
+            elif order_status == "已支付未发货":
+                # 已支付未发货，扣除3分信用分
                 points_deduction = 3
 
             elif order_status == "已发货":

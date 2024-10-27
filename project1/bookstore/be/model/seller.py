@@ -39,8 +39,6 @@ class Seller(db_conn.DBConn):
 
             # print("!!!!!!!!!!!!!",book_info)
 
-
-          
             try:
                 # 检查是否已存在该 book_id
                 existing_book = self.books_collection.find_one({"book_id": book_id})
@@ -55,9 +53,6 @@ class Seller(db_conn.DBConn):
                     })
             except Exception as e:
                 return 530, str(e)
-
-
-            
 
             # 插入新书籍到指定商店的库存中
             result = self.stores_collection.update_one(
