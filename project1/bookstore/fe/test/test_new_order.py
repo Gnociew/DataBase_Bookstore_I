@@ -2,6 +2,7 @@ import pytest
 
 from fe.test.gen_book_data import GenBook
 from fe.access.new_buyer import register_new_buyer
+from fe.access.new_seller import register_new_seller
 import uuid
 
 
@@ -56,3 +57,16 @@ class TestNewOrder:
         assert ok
         code, _ = self.buyer.new_order(self.store_id + "_x", buy_book_id_list)
         assert code != 200
+
+    def test_get_book_rank10(self):
+        user_id = f'test_new_order_seller_{uuid.uuid4()}'
+        self.seller = register_new_seller(user_id,user_id)
+        code,book = self.seller.get_book_rank10()
+
+        # print(book)
+        result_file_path = "fe/rank10_result.html"  # 前一级目录的文件路径
+
+        with open(result_file_path, 'w', encoding='utf-8') as file:
+            file.write(str(book))
+
+        assert code == 200
