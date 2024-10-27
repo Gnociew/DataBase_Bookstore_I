@@ -42,8 +42,3 @@ class Auth:
         r = requests.post(url, json=json)
         return r.status_code
 
-    def deduct_credit(self, user_id: str) -> (int, str):
-        json = {"user_id": user_id}
-        url = urljoin(self.url_prefix, "deduct_credit")  # 使用前面设置的路由
-        r = requests.post(url, json=json)
-        return r.status_code

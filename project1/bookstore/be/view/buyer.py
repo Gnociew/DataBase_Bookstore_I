@@ -4,6 +4,8 @@ from flask import jsonify
 from be.model.buyer import Buyer
 import json
 from bson import ObjectId
+from be.model.seller import Seller
+from be.model.user import User
 
 bp_buyer = Blueprint("buyer", __name__, url_prefix="/buyer")
 
