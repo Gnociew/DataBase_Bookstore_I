@@ -40,23 +40,23 @@ class Seller(db_conn.DBConn):
             # print("!!!!!!!!!!!!!",book_info)
 
 
-            # 插入新书籍到指定商店的库存中
-                # 插入新书籍到 books 集合
-            # self.books_collection.insert_one({
-            #     "book_id": book_id,
-            #     "store_id": store_id,
-            #     "book_info": book_info,
-            #     "purchase_quantity": 0
-            # })
-            self.books_collection.update_one(
-                {"book_id": book_id},
-                {"$set": {
-                    "store_id": store_id,
-                    "book_info": book_info,
-                    "purchase_quantity": 0
-                }}
-)
-            
+          
+            try:
+                # 检查是否已存在该 book_id
+                existing_book = self.books_collection.find_one({"book_id": book_id})
+                
+                if existing_book is None:
+                    # 如果不存在，则插入新文档
+                    self.books_collection.insert_one({
+                        "book_id": book_id,
+                        "store_id": store_id,
+                        "book_info": book_info,
+                        "purchase_quantity": 0
+                    })
+            except Exception as e:
+                return 530, str(e)
+
+
             # 插入新书籍到指定商店的库存中
             result = self.stores_collection.update_one(
                 {"store_id": store_id},
@@ -75,7 +75,7 @@ class Seller(db_conn.DBConn):
                 return error.error_non_exist_store_id(store_id)
 
         except BaseException as e:
-            print(f"Error occurred: {str(e)}")  # 打印错误信息
+            # print(f"Error occurred: {str(e)}")  # 打印错误信息
             return 530, "{}".format(str(e))
         return 200, "ok"
 

@@ -24,7 +24,6 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             order_id = "{}_{}_{}".format(user_id, store_id, str(uuid.uuid1()))
 
             # 创建订单详情列表
-            print("*************************************")
             order_details = []
 
             # 遍历每本书，处理库存和订单详情
@@ -108,7 +107,6 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             })
 
         except Exception as e:
-            print("111111111111111111111111")
             return 530, "{}".format(str(e)), ""
 
         return 200, "ok", order_id
@@ -321,3 +319,20 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             return 530, "{}".format(str(e))
 
         return 200, "ok"
+    
+    def search_books(self,key_words):
+        # print("bemodel",key_words)
+        # key_words = key_words.encode('unicode_escape').decode('utf-8')
+        query = {"$text": {"$search": key_words}}
+        book_info = self.books_collection.find(query)
+
+        # 将光标转换为列表
+        book_info_list = list(book_info)
+        # print("be",book_info_list)
+        # print("be", book_info_list)
+
+        not_found = { 'message': "No books found."}
+        if not book_info_list:
+            return 404, not_found
+
+        return 200,book_info_list
