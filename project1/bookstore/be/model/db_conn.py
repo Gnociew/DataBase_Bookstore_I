@@ -11,7 +11,9 @@ class DBConn:
             # print("Successfully connected to the database")
             self.users_collection = self.conn['users']
             self.stores_collection = self.conn['stores']
-            self.orders_collection = self.conn['orders']
+            self.books_collection = self.conn['books']
+            self.finished_orders_collection = self.conn['finished_orders']
+            self.unfinished_orders_collection = self.conn['unfinished_orders']
         else:
             print("Failed to connect to the database")
 

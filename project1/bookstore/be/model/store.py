@@ -71,10 +71,14 @@ class Store:
             self.stores_collection = self.database['stores']
             self.stores_collection.create_index("store_id", unique=True)
 
-            self.orders_collection = self.database['orders']
-            self.orders_collection.create_index("order_id", unique=True)
+            self.books_collection = self.database['books']
+            self.books_collection.create_index("book_id", unique=True)
 
+            self.finished_orders_collection = self.database['finished_orders']
+            self.finished_orders_collection.create_index("order_id", unique=True)
 
+            self.unfinished_orders_collection = self.database['unfinished_orders']
+            self.unfinished_orders_collection.create_index("order_id", unique=True)
         except Exception as e:
             logging.error(e)  # 记录错误信息
 

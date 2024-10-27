@@ -6,7 +6,7 @@ from be.model import db_conn
 from be.model import error
 
 
-class Buyer(db_conn.DBConn):
+class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
 
@@ -43,9 +43,10 @@ class Buyer(db_conn.DBConn):
                 # book_info_json = json.loads(book_info)
                 # price = book_info_json.get("price")
 
+                # 从数据库获取书籍信息
                 book = self.stores_collection.find_one(
                     {"store_id": store_id, "inventory.book_id": book_id},
-                    {"inventory.$": 1}
+                    {"inventory.$": 1}  # 仅获取匹配的库存信息
                 )
                 if book is None or not book.get('inventory'):
                     return error.error_non_exist_book_id(book_id) + (order_id,)
@@ -53,8 +54,7 @@ class Buyer(db_conn.DBConn):
                 # 获取库存和价格信息
                 # 确保inventory不为空，然后安全地访问元素
                 stock_level = book['inventory'][0]['stock_level'] # 库存数量
-                book_info_json = json.loads(book['inventory'][0]['book_info']) # 图书信息
-                price = book_info_json.get("price") # 图书价格
+                price = book['inventory'][0]['price']
 
                 # 检查库存是否足够
                 if stock_level < count:
@@ -100,7 +100,7 @@ class Buyer(db_conn.DBConn):
                 )
 
             # 插入订单到 orders 集合中
-            self.orders_collection.insert_one({
+            self.unfinished_orders_collection.insert_one({
                 "order_id": order_id,  # 订单ID
                 "user_id": user_id,  # 用户ID
                 "store_id": store_id,  # 商店ID
@@ -128,7 +128,7 @@ class Buyer(db_conn.DBConn):
             # buyer_id = row[1]
             # store_id = row[2]
 
-            order = self.orders_collection.find_one({"order_id": order_id})
+            order = self.unfinished_orders_collection.find_one({"order_id": order_id})
             if order is None:
                 return error.error_invalid_order_id(order_id)
 
