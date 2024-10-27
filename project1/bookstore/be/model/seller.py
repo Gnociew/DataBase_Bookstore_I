@@ -77,7 +77,7 @@ class Seller(db_conn.DBConn):
                 {"$push": {
                     "inventory": {
                         "book_id": book_id,
-                        "booke_name":book_name,
+                        "book_name":book_name,
                         "price":price,
                         "stock_level": stock_level
                     }
