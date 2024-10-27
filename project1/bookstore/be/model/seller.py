@@ -63,7 +63,7 @@ class Seller(db_conn.DBConn):
                 {"$push": {
                     "inventory": {
                         "book_id": book_id,
-                        "booke_name":book_name,
+                        "book_name":book_name,
                         "price":price,
                         "stock_level": stock_level
                     }
@@ -75,7 +75,7 @@ class Seller(db_conn.DBConn):
                 return error.error_non_exist_store_id(store_id)
 
         except BaseException as e:
-            print(f"Error occurred: {str(e)}")  # 打印错误信息
+            # print(f"Error occurred: {str(e)}")  # 打印错误信息
             return 530, "{}".format(str(e))
         return 200, "ok"
 

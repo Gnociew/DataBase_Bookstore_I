@@ -39,7 +39,6 @@ class User(db_conn.DBConn):
     token_lifetime: int = 3600  # 3600 second
 
     def __init__(self):
-        print("arrive at user init")
         db_conn.DBConn.__init__(self) 
 
     def __check_token(self, user_id, db_token, token) -> bool:
@@ -57,13 +56,6 @@ class User(db_conn.DBConn):
             return False
 
     def register(self, user_id: str, password: str):
-        '''
-        print("arrive at user.py register")
-        if self.conn is not None:
-            print("Successfully connected to the database")
-        else:
-            print("Failed to connect to the database")
-        '''
         try:
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
@@ -88,7 +80,6 @@ class User(db_conn.DBConn):
             })
         
         except Exception as e:
-            # print(f"Failed to insert user {user_id}: {e}")
             return error.error_exist_user_id(user_id)
         return 200, "ok"
 
