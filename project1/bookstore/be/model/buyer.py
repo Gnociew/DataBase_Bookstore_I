@@ -492,35 +492,30 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
     # 用户查看历史订单（已经结束的订单）
     def view_finished_orders(self, user_id: str):
-        try:
-            # 从finished_orders集合中查找用户的所有订单
-            orders = self.finished_orders_collection.find({"user_id": user_id})
-            order_list = list(orders)
+        # 从finished_orders集合中查找用户的所有订单
+        orders = self.finished_orders_collection.find({"user_id": user_id})
+        order_list = list(orders)
 
-            # # 将订单转换为列表
-            # order_list = []
-            # for order in orders:
-            #     order_list.append({
-            #         "order_id": order["order_id"],
-            #         "store_id": order["store_id"],
-            #         "create_time": order["create_time"],
-            #         "pay_time": order.get("pay_time"),
-            #         "shipping_time": order.get("shipping_time"),
-            #         "received_time": order.get("received_time"),
-            #         "status": order["status"],
-            #         "order_details": order["order_details"],
-            #     })
-
-
-            not_found = { 'message': "No order found."}
-            if not order_list:
-                return 404, not_found
-
-            return 200,order_list
+        # # 将订单转换为列表
+        # order_list = []
+        # for order in orders:
+        #     order_list.append({
+        #         "order_id": order["order_id"],
+        #         "store_id": order["store_id"],
+        #         "create_time": order["create_time"],
+        #         "pay_time": order.get("pay_time"),
+        #         "shipping_time": order.get("shipping_time"),
+        #         "received_time": order.get("received_time"),
+        #         "status": order["status"],
+        #         "order_details": order["order_details"],
+        #     })
 
 
-        except Exception as e:
-            return 530, "{}".format(str(e)), []
+        not_found = { 'message': "No order found."}
+        if not order_list:
+            return 404, not_found
+
+        return 200,order_list
 
     # 用户查看正在进行中的订单
     def view_ongoing_orders(self, user_id: str):
@@ -546,4 +541,3 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
         except Exception as e:
             return 530, "{}".format(str(e)), []
     
-
