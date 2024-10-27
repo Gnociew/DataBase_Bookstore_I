@@ -168,7 +168,7 @@ class Seller(db_conn.DBConn):
             # 查找未发货的进行中订单
             order = self.unfinished_orders_collection.find_one({
                 "order_id": order_id,
-                "status": "未发货"
+                "status": "已支付未发货"
             })
 
             if not order:
