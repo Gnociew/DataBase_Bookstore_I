@@ -1,5 +1,10 @@
 import pytest
 
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 from fe import conf
 from fe.access.new_seller import register_new_seller
 from fe.access import book
