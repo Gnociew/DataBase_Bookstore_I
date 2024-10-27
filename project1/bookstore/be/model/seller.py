@@ -7,7 +7,7 @@ import logging
 
 class Seller(db_conn.DBConn):
     def __init__(self):
-        db_conn.DBConn.__init__(self)
+        super().__init__()
 
     def add_book(
         self,
@@ -20,6 +20,7 @@ class Seller(db_conn.DBConn):
         stock_level: int,
     ):
         try:
+            # 检查用户、商店是否存在
             if not self.user_id_exist(user_id):
                 return error.error_non_exist_user_id(user_id)
             if not self.store_id_exist(store_id):
@@ -52,6 +53,15 @@ class Seller(db_conn.DBConn):
                     })
             except Exception as e:
                 return 530, str(e)  
+
+            # 插入新书籍到指定商店的库存中
+                # 插入新书籍到 books 集合
+            self.books_collection.insert_one({
+                "book_id": book_id,
+                "store_id": store_id,
+                "book_info": book_info,
+                "purchase_quantity": 0
+            })
 
             # 插入新书籍到指定商店的库存中
             result = self.stores_collection.update_one(
@@ -96,10 +106,12 @@ class Seller(db_conn.DBConn):
         #     return 528, "{}".format(str(e))?
 
             # 更新书籍的库存数量
-            self.stores_collection.update_one(
+            result = self.stores_collection.update_one(
                 {"store_id": store_id, "inventory.book_id": book_id},
                 {"$inc": {"inventory.$.stock_level": add_stock_level}}
             )
+            if result.modified_count == 0:
+                return error.error_non_exist_store_id(store_id)
 
         except BaseException as e:
             return 530, "{}".format(str(e))
