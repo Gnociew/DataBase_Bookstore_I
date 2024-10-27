@@ -5,7 +5,12 @@ from be.model import error
 from be.model import db_conn
 from datetime import datetime, timedelta
 
-from be.model.store import init_database
+# encode a json string like:
+#   {
+#       "user_id": [user name],
+#       "terminal": [terminal code],
+#       "timestamp": [ts]} to a JWT
+#   }
 
 
 def jwt_encode(user_id: str, terminal: str) -> str:
