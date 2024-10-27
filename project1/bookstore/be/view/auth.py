@@ -57,10 +57,18 @@ def change_password():
     )
     return jsonify({"message": message}), code
 
-@bp_auth.route("/deduct_credit", methods=["POST"])
-def deduct_credit():
+@bp_auth.route("/update_credit", methods=["POST"])
+def update_credit():
     user_id = request.json.get("user_id", "")
+    points = request.json.get("points", 0)
     u = user.User()
-    # 每次调用固定扣除 5 分
-    code, message = u.update_credit(user_id=user_id, points=5)
+    code, message = u.update_credit(user_id, points)
+    return jsonify({"message": message}), code
+
+@bp_auth.route("/set_credit_score", methods=["POST"])
+def set_credit_score():
+    user_id = request.json.get("user_id", "")
+    score = request.json.get("score", 0)
+    u = user.User()
+    code, message = u.set_credit_score(user_id=user_id, score=score)
     return jsonify({"message": message}), code
