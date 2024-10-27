@@ -1,6 +1,6 @@
 #import sqlite3 as sqlite
 import uuid
-import json
+from be.model import user
 import logging
 from be.model import db_conn
 from be.model import error
@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
+        self.user_model = user()
 
     def new_order(
         self, user_id: str, store_id: str, id_and_count: [(str, int)]
@@ -328,3 +329,188 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             return 530, "{}".format(str(e))
 
         return 200, "ok"
+
+    # 用户取消订单：1.下单未支付30分钟内可直接取消；2.下单已支付取消订单扣3分信用分；3.发货后取消订单扣5分信用分
+    def cancel_order(self, user_id: str, order_id: str) -> (int, str):
+        try:
+            # 查询订单信息
+            order = self.unfinished_orders_collection.find_one({"order_id": order_id, "user_id": user_id})
+            if order is None:
+                return error.error_invalid_order_id(order_id)
+
+            # 获取订单状态、创建时间和相关信息
+            order_status = order.get("status")
+            create_time = order.get("create_time")
+            order_details = order['order_details']
+            store_id = order['store_id']
+            total_amount = sum(item['count'] * item['price'] for item in order_details)  # 计算订单总金额
+
+            # 初始化扣除的信用分数
+            points_deduction = 0
+
+            # 订单状态判断
+            if order_status == "未支付" and (datetime.now() - create_time).total_seconds() <= 1800:
+                # 未支付订单且未超时，不扣信用分
+                points_deduction = 0
+
+            elif order_status == "已支付未发货":
+                # 已支付未发货，扣除3分信用分
+                points_deduction = 3
+
+            elif order_status == "已发货":
+                # 已发货，扣除5分信用分
+                points_deduction = 5
+
+            else:
+                return error.error_order_not_cancelable(order_id)
+
+            # 更新库存
+            for detail in order_details:
+                book_id = detail['book_id']
+                count = detail['count']
+
+                # 查找并获取当前库存
+                book = self.stores_collection.find_one(
+                    {"store_id": store_id, "inventory.book_id": book_id},
+                    {"inventory.$": 1}
+                )
+                if book and book.get('inventory'):
+                    current_stock = book['inventory'][0]['stock_level']
+
+                    # 更新库存，恢复相应的书籍数量
+                    self.stores_collection.update_one(
+                        {"store_id": store_id, "inventory.book_id": book_id},
+                        {"$set": {"inventory.$.stock_level": current_stock + count}}
+                    )
+                else:
+                    return error.error_non_exist_book_id(book_id)
+
+            # 调用 user 类的方法更新信用分数
+            if points_deduction > 0:
+                credit_code, credit_msg = self.user_model.update_credit(user_id, points_deduction)
+                if credit_code != 200:
+                    return credit_code, credit_msg
+
+            # 删除未完成订单并将其转存至完成订单集合
+            self.unfinished_orders_collection.delete_one({"order_id": order_id})
+            self.finished_orders_collection.insert_one({
+                "order_id": order_id,
+                "user_id": user_id,
+                "store_id": store_id,
+                "create_time": create_time,
+                "status": "已取消",
+                "order_details": order_details
+            })
+
+            # 更新买家余额
+            self.users_collection.update_one({"user_id": user_id}, {"$inc": {"balance": total_amount}})
+            # 更新卖家余额
+            self.stores_collection.update_one({"store_id": store_id}, {"$inc": {"balance": -total_amount}})
+
+        except Exception as e:
+            return 530, f"{str(e)}"
+
+        return 200, "订单取消成功"
+
+    # 平台自动取消订单（用户下单超时30分钟未支付）
+    def auto_cancel_order(self):
+        try:
+            # 定义超时时间（30分钟）
+            timeout = timedelta(minutes=30)
+            current_time = datetime.now()
+
+            # 查找所有超过30分钟未支付的订单
+            unpaid_orders = self.unfinished_orders_collection.find({
+                "status": "未支付",
+                "create_time": {"$lt": current_time - timeout}
+            })
+
+            # 遍历未支付订单并取消
+            for order in unpaid_orders:
+                order_id = order["order_id"]
+                user_id = order["user_id"]
+                store_id = order["store_id"]
+                order_details = order["order_details"]
+
+                # 更新库存
+                for item in order_details:
+                    book_id = item["book_id"]
+                    count = item["count"]
+
+                    # 将库存还原
+                    self.stores_collection.update_one(
+                        {"store_id": store_id, "inventory.book_id": book_id},
+                        {"$inc": {"inventory.$.stock_level": count}}  # 增加库存
+                    )
+
+                # 从 unfinished_orders_collection 删除订单
+                self.unfinished_orders_collection.delete_one({"order_id": order_id})
+
+                # 设置取消状态并去除无用字段
+                finished_order = {
+                    "order_id": order["order_id"],
+                    "user_id": order["user_id"],
+                    "store_id": order["store_id"],
+                    "create_time": order["create_time"],
+                    "status": "取消",
+                    "order_details": order["order_details"]
+                }
+
+                # 将取消的订单插入到已完成订单集合
+                self.finished_orders_collection.insert_one(finished_order)
+
+                print(f"Order {order_id} has been automatically canceled due to timeout.")
+
+        except Exception as e:
+            return 530, f"{str(e)}"
+
+        return 200, "Automatic cancellation of unpaid orders complete."
+
+    # 用户查看历史订单（已经结束的订单）
+    def view_order_history(self, user_id: str):
+        try:
+            # 从finished_orders集合中查找用户的所有订单
+            orders = self.finished_orders_collection.find({"user_id": user_id})
+
+            # 将订单转换为列表
+            order_list = []
+            for order in orders:
+                order_list.append({
+                    "order_id": order["order_id"],
+                    "store_id": order["store_id"],
+                    "create_time": order["create_time"],
+                    "pay_time": order.get("pay_time"),
+                    "shipping_time": order.get("shipping_time"),
+                    "received_time": order.get("received_time"),
+                    "status": order["status"],
+                    "order_details": order["order_details"],
+                })
+
+            return 200, "Order history retrieved successfully.", order_list
+
+        except Exception as e:
+            return 530, "{}".format(str(e)), []
+
+    # 用户查看正在进行中的订单
+    def view_ongoing_orders(self, user_id: str):
+        try:
+            # 从unfinished_orders集合中查找用户的进行中订单
+            ongoing_orders = self.unfinished_orders_collection.find({"user_id": user_id})
+
+            # 将订单转换为列表
+            ongoing_order_list = []
+            for order in ongoing_orders:
+                ongoing_order_list.append({
+                    "order_id": order["order_id"],
+                    "store_id": order["store_id"],
+                    "create_time": order["create_time"],
+                    "pay_time": order.get("pay_time", "未支付"),# 设置默认值
+                    "shipping_time": order.get("shipping_time"),
+                    "status": order["status"],
+                    "order_details": order["order_details"],
+                })
+
+            return 200, "Ongoing orders retrieved successfully.", ongoing_order_list
+
+        except Exception as e:
+            return 530, "{}".format(str(e)), []
