@@ -52,3 +52,12 @@ class Seller:
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
+    
+    def get_book_rank10(self):
+        url = urljoin(self.url_prefix, "get_book_rank10")
+        headers = {"token": self.token}
+        r = requests.post(url, headers=headers)
+        print("access",r.status_code)
+        response_json = r.json()
+        return r.status_code, response_json.get("book_info", {})  # 默认返回空字典
+    

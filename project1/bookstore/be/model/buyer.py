@@ -1,16 +1,16 @@
 #import sqlite3 as sqlite
 import uuid
-from be.model import user
+import json
 import logging
 from be.model import db_conn
 from be.model import error
+from be.model.user import User
 from datetime import datetime, timedelta
 from be.model.user import User
 
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
-        self.user_model = user()
 
     def new_order(
         self, user_id: str, store_id: str, id_and_count: [(str, int)]
@@ -109,6 +109,12 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 "status":"未支付",
                 "order_details": order_details  # 订单详情
             })
+
+            # 更新 books 集合的购买量
+            self.books_collection.update_one(
+                {"book_id": book_id},
+                {"$inc": {"purchase_quantity": count}}
+            )
 
         except Exception as e:
             return 530, "{}".format(str(e)), ""
