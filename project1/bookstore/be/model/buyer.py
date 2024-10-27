@@ -198,7 +198,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             #     total_price = total_price + price * count
 
              # 计算订单总价
-            order = self.orders_collection.find_one({"order_id": order_id})
+            order = self.unfinished_orders_collection.find_one({"order_id": order_id})
             if order is None:
                 return error.error_invalid_order_id(order_id)
 
@@ -262,7 +262,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             logging.info(f"卖家余额更新成功：增加金额={total_price}")
 
             # 删除订单和订单详情
-            self.orders_collection.delete_one({"order_id": order_id})
+            self.unfinished_orders_collection.delete_one({"order_id": order_id})
             logging.info(f"订单删除成功：订单ID={order_id}")
             #self.orders_collection.delete_many({"order_id": order_id})
 
