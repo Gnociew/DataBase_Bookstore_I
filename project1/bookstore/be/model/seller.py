@@ -55,15 +55,6 @@ class Seller(db_conn.DBConn):
                 return 530, str(e)  
 
             # 插入新书籍到指定商店的库存中
-                # 插入新书籍到 books 集合
-            self.books_collection.insert_one({
-                "book_id": book_id,
-                "store_id": store_id,
-                "book_info": book_info,
-                "purchase_quantity": 0
-            })
-
-            # 插入新书籍到指定商店的库存中
             result = self.stores_collection.update_one(
                 {"store_id": store_id},
                 {"$push": {
