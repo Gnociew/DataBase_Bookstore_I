@@ -4,6 +4,9 @@ import logging
 import sqlite3 as sqlite
 from be.model import error
 from be.model import db_conn
+from datetime import datetime, timedelta
+
+from be.model.store import init_database
 
 # encode a json string like:
 #   {
@@ -37,7 +40,8 @@ class User(db_conn.DBConn):
     token_lifetime: int = 3600  # 3600 second
 
     def __init__(self):
-        db_conn.DBConn.__init__(self)
+        print("arrive at user init")
+        db_conn.DBConn.__init__(self) 
 
     def __check_token(self, user_id, db_token, token) -> bool:
         try:
@@ -54,38 +58,70 @@ class User(db_conn.DBConn):
             return False
 
     def register(self, user_id: str, password: str):
+        '''
+        print("arrive at user.py register")
+        if self.conn is not None:
+            print("Successfully connected to the database")
+        else:
+            print("Failed to connect to the database")
+        '''
         try:
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-            self.conn.execute(
-                "INSERT into user(user_id, password, balance, token, terminal) "
-                "VALUES (?, ?, ?, ?, ?);",
-                (user_id, password, 0, token, terminal),
-            )
-            self.conn.commit()
-        except sqlite.Error:
+        #     self.conn.execute(
+        #         "INSERT into user(user_id, password, balance, token, terminal) "
+        #         "VALUES (?, ?, ?, ?, ?);",
+        #         (user_id, password, 0, token, terminal),
+        #     )
+        #     self.conn.commit()
+        # except sqlite.Error:
+        #     return error.error_exist_user_id(user_id)
+        # return 200, "ok"
+            initial_credit = 100  # 设置初始信用分
+            self.users_collection.insert_one({
+                "user_id": user_id,
+                "password": password,
+                "balance": 0,
+                "token": token,
+                "terminal": terminal,
+                "credit": initial_credit,
+                "stores": []
+            })
+        
+        except Exception as e:
+            # print(f"Failed to insert user {user_id}: {e}")
             return error.error_exist_user_id(user_id)
         return 200, "ok"
 
     def check_token(self, user_id: str, token: str) -> (int, str):
-        cursor = self.conn.execute("SELECT token from user where user_id=?", (user_id,))
-        row = cursor.fetchone()
-        if row is None:
+        # cursor = self.conn.execute("SELECT token from user where user_id=?", (user_id,))
+        # row = cursor.fetchone()
+        # if row is None:
+        #     return error.error_authorization_fail()
+        # db_token = row[0]
+        user = self.users_collection.find_one({"user_id": user_id})
+        if user is None:
             return error.error_authorization_fail()
-        db_token = row[0]
+        db_token = user.get("token")
         if not self.__check_token(user_id, db_token, token):
             return error.error_authorization_fail()
         return 200, "ok"
 
     def check_password(self, user_id: str, password: str) -> (int, str):
-        cursor = self.conn.execute(
-            "SELECT password from user where user_id=?", (user_id,)
-        )
-        row = cursor.fetchone()
-        if row is None:
+        # cursor = self.conn.execute(
+        #     "SELECT password from user where user_id=?", (user_id,)
+        # )
+        # row = cursor.fetchone()
+        # if row is None:
+        #     return error.error_authorization_fail()
+
+        # if password != row[0]:
+        #     return error.error_authorization_fail()
+        user = self.users_collection.find_one({"user_id": user_id})
+        if user is None:
             return error.error_authorization_fail()
 
-        if password != row[0]:
+        if password != user.get("password"):
             return error.error_authorization_fail()
 
         return 200, "ok"
@@ -98,18 +134,26 @@ class User(db_conn.DBConn):
                 return code, message, ""
 
             token = jwt_encode(user_id, terminal)
-            cursor = self.conn.execute(
-                "UPDATE user set token= ? , terminal = ? where user_id = ?",
-                (token, terminal, user_id),
+        #     cursor = self.conn.execute(
+        #         "UPDATE user set token= ? , terminal = ? where user_id = ?",
+        #         (token, terminal, user_id),
+        #     )
+        #     if cursor.rowcount == 0:
+        #         return error.error_authorization_fail() + ("",)
+        #     self.conn.commit()
+        # except sqlite.Error as e:
+        #     return 528, "{}".format(str(e)), ""
+        # except BaseException as e:
+        #     return 530, "{}".format(str(e)), ""
+        # return 200, "ok", token
+            self.users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {"token": token, "terminal": terminal}}
             )
-            if cursor.rowcount == 0:
-                return error.error_authorization_fail() + ("",)
-            self.conn.commit()
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e)), ""
-        except BaseException as e:
+        except Exception as e:
             return 530, "{}".format(str(e)), ""
         return 200, "ok", token
+
 
     def logout(self, user_id: str, token: str) -> bool:
         try:
@@ -120,17 +164,24 @@ class User(db_conn.DBConn):
             terminal = "terminal_{}".format(str(time.time()))
             dummy_token = jwt_encode(user_id, terminal)
 
-            cursor = self.conn.execute(
-                "UPDATE user SET token = ?, terminal = ? WHERE user_id=?",
-                (dummy_token, terminal, user_id),
-            )
-            if cursor.rowcount == 0:
-                return error.error_authorization_fail()
+        #     cursor = self.conn.execute(
+        #         "UPDATE user SET token = ?, terminal = ? WHERE user_id=?",
+        #         (dummy_token, terminal, user_id),
+        #     )
+        #     if cursor.rowcount == 0:
+        #         return error.error_authorization_fail()
 
-            self.conn.commit()
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
-        except BaseException as e:
+        #     self.conn.commit()
+        # except sqlite.Error as e:
+        #     return 528, "{}".format(str(e))
+        # except BaseException as e:
+        #     return 530, "{}".format(str(e))
+        # return 200, "ok"
+            self.users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {"token": dummy_token, "terminal": terminal}}
+            )
+        except Exception as e:
             return 530, "{}".format(str(e))
         return 200, "ok"
 
@@ -140,16 +191,24 @@ class User(db_conn.DBConn):
             if code != 200:
                 return code, message
 
-            cursor = self.conn.execute("DELETE from user where user_id=?", (user_id,))
-            if cursor.rowcount == 1:
-                self.conn.commit()
+        #     cursor = self.conn.execute("DELETE from user where user_id=?", (user_id,))
+        #     if cursor.rowcount == 1:
+        #         self.conn.commit()
+        #     else:
+        #         return error.error_authorization_fail()
+        # except sqlite.Error as e:
+        #     return 528, "{}".format(str(e))
+        # except BaseException as e:
+        #     return 530, "{}".format(str(e))
+        # return 200, "ok"
+            result = self.users_collection.delete_one({"user_id": user_id})
+            if result.deleted_count == 1:
+                return 200, "ok"
             else:
                 return error.error_authorization_fail()
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
-        except BaseException as e:
+        except Exception as e:
             return 530, "{}".format(str(e))
-        return 200, "ok"
+
 
     def change_password(
         self, user_id: str, old_password: str, new_password: str
@@ -161,16 +220,139 @@ class User(db_conn.DBConn):
 
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-            cursor = self.conn.execute(
-                "UPDATE user set password = ?, token= ? , terminal = ? where user_id = ?",
-                (new_password, token, terminal, user_id),
-            )
-            if cursor.rowcount == 0:
-                return error.error_authorization_fail()
+        #     cursor = self.conn.execute(
+        #         "UPDATE user set password = ?, token= ? , terminal = ? where user_id = ?",
+        #         (new_password, token, terminal, user_id),
+        #     )
+        #     if cursor.rowcount == 0:
+        #         return error.error_authorization_fail()
 
-            self.conn.commit()
-        except sqlite.Error as e:
-            return 528, "{}".format(str(e))
-        except BaseException as e:
+        #     self.conn.commit()
+        # except sqlite.Error as e:
+        #     return 528, "{}".format(str(e))
+        # except BaseException as e:
+        #     return 530, "{}".format(str(e))
+        # return 200, "ok"
+            self.users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {"password": new_password, "token": token, "terminal": terminal}}
+            )
+        except Exception as e:
             return 530, "{}".format(str(e))
         return 200, "ok"
+
+    # 检查信用分是否足够
+    def check_credit(self, user_id: str) -> (int, str):
+        user = self.users_collection.find_one({"user_id": user_id})
+        if user is None:
+            return error.error_authorization_fail()
+
+        if user.get("credit") < 5:
+            return 400, "Insufficient credit to cancel the order."
+
+        return 200, "Credit is sufficient."
+
+    # 更新用户的信用分
+    def update_credit(self, user_id: str, points: int) -> (int, str):
+        # 先检查信用分是否足够
+        code, message = self.check_credit(user_id)
+        if code != 200:
+            return code, message  # 若信用分不足，则返回检查结果
+
+        try:
+            result = self.users_collection.update_one(
+                {"user_id": user_id},
+                {"$inc": {"credit_score": -points}}  # 扣除信用分
+            )
+            if result.modified_count == 0:
+                return error.error_authorization_fail()  # 用户未找到
+        except Exception as e:
+            return 530, "{}".format(str(e))
+        return 200, "Credit score update successfully."
+
+    # 用户确认收货
+    def confirm_receipt(self, user_id: str, order_id: str) -> (int, str):
+        try:
+            # 查找未发货的订单，确保订单属于该用户
+            unfinished_order = self.orders_collection.find_one({
+                "order_id": order_id,
+                "user_id": user_id,
+                "status": "未发货"
+            })
+
+            if not unfinished_order:
+                return 404, "No valid unfulfilled orders were found or the order was confirmed to be received."
+
+            # 更新订单状态为已确认收货
+            self.orders_collection.update_one(
+                {"order_id": order_id},
+                {"$set": {"status": "确认收货", "received_time": datetime.now()}}  # 更新状态和收货时间
+            )
+
+            # 将订单插入到历史订单集合中
+            self.finished_orders_collection.insert_one({
+                "order_id": unfinished_order["order_id"],
+                "user_id": unfinished_order["user_id"],
+                "store_id": unfinished_order["store_id"],
+                "create_time": unfinished_order["create_time"],
+                "pay_time": unfinished_order["pay_time"],
+                "shipping_time": unfinished_order["shipping_time"],
+                "received_time": datetime.now(),  # 设置确认收货时间
+                "status": "确认收货",
+                "order_details": unfinished_order["order_details"]
+            })
+
+            # 从进行中订单集合中删除该订单
+            self.orders_collection.delete_one({"order_id": order_id})
+
+        except Exception as e:
+            return 530, "Error: {}".format(str(e))
+
+        return 200, "Confirm that the receipt is successful."
+
+    # 平台自动确认收货:检查已发货订单是否超过14天，超过则自动确认收货
+    def auto_confirm_receipt(self) -> (int, str):
+        try:
+            # 当前时间减去14天
+            fourteen_days_ago = datetime.now() - timedelta(days=14)
+
+            # 找出发货超过14天且未确认收货的订单
+            orders_to_confirm = self.unfinished_orders_collection.find({
+                "status": "已发货",
+                "shipping_time": {"$lte": fourteen_days_ago}
+            })
+
+            # 判断是否有符合条件的订单
+            if not orders_to_confirm.count():
+                return 404, "No orders eligible for automatic receipt confirmation were found."
+
+            # 遍历符合条件的订单并更新状态
+            for order in orders_to_confirm:
+                order_id = order['order_id']
+
+                # 更新订单信息，确认收货
+                self.unfinished_orders_collection.update_one(
+                    {"order_id": order_id},
+                    {"$set": {"status": "确认收货", "received_time": datetime.now()}}
+                )
+
+                # 将订单移动到历史订单集合
+                self.finished_orders_collection.insert_one({
+                    "order_id": order["order_id"],
+                    "user_id": order["user_id"],
+                    "store_id": order["store_id"],
+                    "create_time": order["create_time"],
+                    "pay_time": order["pay_time"],
+                    "shipping_time": order["shipping_time"],
+                    "received_time": datetime.now(),
+                    "status": "确认收货",
+                    "order_details": order["order_details"]
+                })
+
+                # 从进行中订单集合中删除该订单
+                self.unfinished_orders_collection.delete_one({"order_id": order_id})
+
+            return 200, "Automatic confirmation of receipt was successful for eligible orders."
+
+        except Exception as e:
+            return 530, "Error during automatic confirmation of receipt: {}".format(str(e))

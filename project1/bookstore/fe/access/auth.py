@@ -13,6 +13,7 @@ class Auth:
         return r.status_code, r.json().get("token")
 
     def register(self, user_id: str, password: str) -> int:
+        print("fe.auth.register")
         json = {"user_id": user_id, "password": password}
         url = urljoin(self.url_prefix, "register")
         r = requests.post(url, json=json)
@@ -38,5 +39,11 @@ class Auth:
     def unregister(self, user_id: str, password: str) -> int:
         json = {"user_id": user_id, "password": password}
         url = urljoin(self.url_prefix, "unregister")
+        r = requests.post(url, json=json)
+        return r.status_code
+
+    def deduct_credit(self, user_id: str) -> (int, str):
+        json = {"user_id": user_id}
+        url = urljoin(self.url_prefix, "deduct_credit")  # 使用前面设置的路由
         r = requests.post(url, json=json)
         return r.status_code

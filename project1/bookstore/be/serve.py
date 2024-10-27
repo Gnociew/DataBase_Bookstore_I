@@ -8,28 +8,34 @@ from be.view import seller
 from be.view import buyer
 from be.model.store import init_database, init_completed_event
 
+#关闭服务器#
+
 bp_shutdown = Blueprint("shutdown", __name__)
 
-
+# 关闭函数
 def shutdown_server():
     func = request.environ.get("werkzeug.server.shutdown")
     if func is None:
         raise RuntimeError("Not running with the Werkzeug Server")
     func()
 
-
+#关闭路由
 @bp_shutdown.route("/shutdown")
 def be_shutdown():
     shutdown_server()
     return "Server shutting down..."
 
 
+#应用运行函数
 def be_run():
     this_path = os.path.dirname(__file__)
     parent_path = os.path.dirname(this_path)
     log_file = os.path.join(parent_path, "app.log")
-    init_database(parent_path)
+    #init_database(parent_path)
+    print("begin to init database")
+    init_database()
 
+    # 配置日志
     logging.basicConfig(filename=log_file, level=logging.ERROR)
     handler = logging.StreamHandler()
     formatter = logging.Formatter(

@@ -29,6 +29,7 @@ def logout():
 
 @bp_auth.route("/register", methods=["POST"])
 def register():
+    print("be.auth.register")
     user_id = request.json.get("user_id", "")
     password = request.json.get("password", "")
     u = user.User()
@@ -54,4 +55,12 @@ def change_password():
     code, message = u.change_password(
         user_id=user_id, old_password=old_password, new_password=new_password
     )
+    return jsonify({"message": message}), code
+
+@bp_auth.route("/deduct_credit", methods=["POST"])
+def deduct_credit():
+    user_id = request.json.get("user_id", "")
+    u = user.User()
+    # 每次调用固定扣除 5 分
+    code, message = u.update_credit(user_id=user_id, points=5)
     return jsonify({"message": message}), code
