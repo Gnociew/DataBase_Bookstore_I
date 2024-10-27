@@ -15,6 +15,8 @@ class TestSellerOperations:
 
         # 注册新买家
         self.buyer = register_new_buyer(self.buyer_id, self.password)
+        code = self.buyer.add_funds(100000)
+        assert code == 200, "充值失败"
 
         # 注册新卖家
         self.seller = register_new_seller(self.seller_id, self.password)
@@ -47,8 +49,11 @@ class TestSellerOperations:
         for i in range(0,3):
             tmp_tuple = (self.buy_book_id_list[i],1)
             test_mark_order_shipped_success_book_id_list.append(tmp_tuple)
-        code, order_id = self.buyer.new_order(self.store_id, test_mark_order_shipped_success_book_id_list)
+        code, order_id =self.buyer.new_order(self.store_id, test_mark_order_shipped_success_book_id_list)
         assert code == 200, f"创建订单失败"
+
+        code = self.buyer.payment(order_id)
+        assert code == 200, f"支付失败"
 
         # 标记订单为已发货
         code = self.seller.mark_order_shipped(order_id)
@@ -74,6 +79,9 @@ class TestSellerOperations:
             test_mark_order_shipped_already_shipped.append(tmp_tuple)
         code, order_id = self.buyer.new_order(self.store_id, test_mark_order_shipped_already_shipped)
         assert code == 200, f"创建订单失败"
+
+        code = self.buyer.payment(order_id)
+        assert code == 200, f"支付失败"
 
         # 标记订单为已发货
         code = self.seller.mark_order_shipped(order_id)
