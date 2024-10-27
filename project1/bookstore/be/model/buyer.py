@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
+        self.user_model = user()
 
     def new_order(
         self, user_id: str, store_id: str, id_and_count: [(str, int)]
