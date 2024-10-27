@@ -4,6 +4,7 @@ import json
 import logging
 from be.model import db_conn
 from be.model import error
+from datetime import datetime, timedelta
 
 
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
@@ -103,6 +104,8 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 "order_id": order_id,  # 订单ID
                 "user_id": user_id,  # 用户ID
                 "store_id": store_id,  # 商店ID
+                "create_time": datetime.now(),
+                "status":"未支付",
                 "order_details": order_details  # 订单详情
             })
 
@@ -259,10 +262,16 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             )
             logging.info(f"卖家余额更新成功：增加金额={total_price}")
 
-            # 删除订单和订单详情
-            self.unfinished_orders_collection.delete_one({"order_id": order_id})
-            logging.info(f"订单删除成功：订单ID={order_id}")
-            #self.orders_collection.delete_many({"order_id": order_id})
+            # 更新订单状态为已支付未发货，设置支付时间
+            self.unfinished_orders_collection.update_one(
+                {"order_id": order_id},
+                {
+                    "$set": {
+                        "status": "已支付未发货",  # 更新状态
+                        "pay_time": datetime.now()  # 设置支付时间
+                    }
+                }
+            )
 
         # except sqlite.Error as e:
         #     return 528, "{}".format(str(e))

@@ -1,12 +1,9 @@
 import jwt
 import time
 import logging
-import sqlite3 as sqlite
 from be.model import error
 from be.model import db_conn
 from datetime import datetime, timedelta
-
-from be.model.store import init_database
 
 # encode a json string like:
 #   {
@@ -265,20 +262,14 @@ class User(db_conn.DBConn):
     def confirm_receipt(self, user_id: str, order_id: str) -> (int, str):
         try:
             # 查找未发货的订单，确保订单属于该用户
-            unfinished_order = self.orders_collection.find_one({
+            unfinished_order = self.unfinished_orders_collection.find_one({
                 "order_id": order_id,
                 "user_id": user_id,
-                "status": "未发货"
+                "status": "已发货"
             })
 
             if not unfinished_order:
                 return 404, "No valid unfulfilled orders were found or the order was confirmed to be received."
-
-            # 更新订单状态为已确认收货
-            self.orders_collection.update_one(
-                {"order_id": order_id},
-                {"$set": {"status": "确认收货", "received_time": datetime.now()}}  # 更新状态和收货时间
-            )
 
             # 将订单插入到历史订单集合中
             self.finished_orders_collection.insert_one({
@@ -294,7 +285,7 @@ class User(db_conn.DBConn):
             })
 
             # 从进行中订单集合中删除该订单
-            self.orders_collection.delete_one({"order_id": order_id})
+            self.unfinished_orders_collection.delete_one({"order_id": order_id})
 
         except Exception as e:
             return 530, "Error: {}".format(str(e))
@@ -320,12 +311,6 @@ class User(db_conn.DBConn):
             # 遍历符合条件的订单并更新状态
             for order in orders_to_confirm:
                 order_id = order['order_id']
-
-                # 更新订单信息，确认收货
-                self.unfinished_orders_collection.update_one(
-                    {"order_id": order_id},
-                    {"$set": {"status": "确认收货", "received_time": datetime.now()}}
-                )
 
                 # 将订单移动到历史订单集合
                 self.finished_orders_collection.insert_one({
