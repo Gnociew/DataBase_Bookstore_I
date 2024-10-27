@@ -61,3 +61,16 @@ class Seller:
         response_json = r.json()
         return r.status_code, response_json.get("book_info", {})  # 默认返回空字典
     
+
+    def mark_order_shipped(self, order_id: str) -> (int, str):
+        """
+        根据订单ID标记订单为“已发货”。
+        """
+        json_data = {
+            "order_id": order_id
+        }
+        url = urljoin(self.url_prefix, "mark_order_shipped")
+        headers = {"token": self.token}
+        response = requests.post(url, headers=headers, json=json_data)
+        return response.status_code
+

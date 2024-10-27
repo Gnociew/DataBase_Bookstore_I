@@ -2,7 +2,7 @@
 from be.model import error
 from be.model import db_conn
 from datetime import datetime
-import json
+import logging
 
 
 class Seller(db_conn.DBConn):
@@ -95,7 +95,7 @@ class Seller(db_conn.DBConn):
         #     )
         #     self.conn.commit()
         # except sqlite.Error as e:
-        #     return 528, "{}".format(str(e))
+        #     return 528, "{}".format(str(e))?
 
             # 更新书籍的库存数量
             result = self.stores_collection.update_one(
@@ -154,3 +154,58 @@ class Seller(db_conn.DBConn):
             return 404, not_found
 
         return 200,book_info_list
+
+    def mark_order_shipped(self, order_id: str) -> (int, str):
+        """
+        根据订单ID标记订单为“已发货”。
+        逻辑步骤：
+        1. 查找订单，确保订单存在且状态为“未发货”。
+        2. 获取订单中的 store_id。
+        3. 根据 store_id 找到对应的卖家（用户）。
+        4. 更新订单状态为“已发货”并记录发货时间。
+        """
+        try:
+            # 查找未发货的进行中订单
+            order = self.unfinished_orders_collection.find_one({
+                "order_id": order_id,
+                "status": "未发货"
+            })
+
+            if not order:
+                # 订单不存在或状态不为“未发货”
+                return error.error_invalid_order_id(order_id)
+
+            store_id = order.get("store_id")
+            if not store_id:
+                # 订单缺少 store_id 信息
+                return error.error_and_message(528, "订单缺少 store_id 信息。")
+
+            # 找到关联的用户（卖家）
+            seller = self.users_collection.find_one({
+                "stores.store_id": store_id
+            })
+
+            if not seller:
+                # 未找到关联 store_id 的卖家
+                return error.error_and_message(528, f"未找到关联 store_id '{store_id}' 的卖家。")
+
+            # 更新订单状态为“已发货”并设置发货时间
+            result = self.unfinished_orders_collection.update_one(
+                {"order_id": order_id},
+                {"$set": {
+                    "status": "已发货",
+                    "shipping_time": datetime.now()
+                }}
+            )
+
+            if result.modified_count == 0:
+                # 无法更新订单状态
+                return error.error_and_message(528, "无法更新订单状态。")
+
+            # 记录成功发货的日志
+            logging.info(f"Order {order_id} marked as shipped by seller {seller.get('user_id')}.")
+
+        except BaseException as e:
+            logging.error(f"Error in mark_order_shipped: {str(e)}")
+            return error.error_and_message(528, "未知错误。")
+        return 200, "ok"
