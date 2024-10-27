@@ -83,28 +83,4 @@ class Buyer:
         # print("access response json:", response_json)
         return r.status_code, response_json.get("order", {})  # 默认返回空字典
        
-
-    # # 将订单标记为已发货
-    # def shipping_order(self, order_id: str) -> int:
-    #     url = urljoin(self.url_prefix, "shipping_order")  # 假设后端有这个 API
-    #     headers = {"token": self.token}
-    #     json = {"order_id": order_id}
-    #
-    #     r = requests.post(url, headers=headers, json=json)
-    #     return r.status_code
-    #
-    # # 用户确认收货
-    # def confirm_receipt(self, order_id: str) -> (int, str):
-    #     url = urljoin(self.url_prefix, "confirm_receipt")  # 假设后端有这个 API
-    #     headers = {"token": self.token}
-    #     json = {"user_id": self.user_id, "order_id": order_id}
-    #     response = requests.post(url, headers=headers, json=json)
-    #     return response.status_code
-    #
-    # # 平台自动确认收货
-    # def auto_confirm_receipt(self) -> (int, str):
-    #     url = urljoin(self.url_prefix, "auto_confirm_receipt")  # 假设后端有这个 API
-    #     headers = {"token": self.token}
-    #     r = requests.post(url, headers=headers)
-    #     return r.status_code
     
