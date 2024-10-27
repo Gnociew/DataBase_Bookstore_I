@@ -5,14 +5,6 @@ from be.model import error
 from be.model import db_conn
 from datetime import datetime, timedelta
 
-# encode a json string like:
-#   {
-#       "user_id": [user name],
-#       "terminal": [terminal code],
-#       "timestamp": [ts]} to a JWT
-#   }
-
-
 def jwt_encode(user_id: str, terminal: str) -> str:
     encoded = jwt.encode(
         {"user_id": user_id, "terminal": terminal, "timestamp": time.time()},
@@ -21,13 +13,6 @@ def jwt_encode(user_id: str, terminal: str) -> str:
     )
     return encoded
 
-
-# decode a JWT to a json string like:
-#   {
-#       "user_id": [user name],
-#       "terminal": [terminal code],
-#       "timestamp": [ts]} to a JWT
-#   }
 def jwt_decode(encoded_token, user_id: str) -> str:
     decoded = jwt.decode(encoded_token, key=user_id, algorithms="HS256")
     return decoded
@@ -57,15 +42,6 @@ class User(db_conn.DBConn):
         try:
             terminal = "terminal_{}".format(str(time.time()))
             token = jwt_encode(user_id, terminal)
-        #     self.conn.execute(
-        #         "INSERT into user(user_id, password, balance, token, terminal) "
-        #         "VALUES (?, ?, ?, ?, ?);",
-        #         (user_id, password, 0, token, terminal),
-        #     )
-        #     self.conn.commit()
-        # except sqlite.Error:
-        #     return error.error_exist_user_id(user_id)
-        # return 200, "ok"
             initial_credit = 100  # 设置初始信用分
             self.users_collection.insert_one({
                 "user_id": user_id,
@@ -257,6 +233,16 @@ class User(db_conn.DBConn):
         except Exception as e:
             return 530, "{}".format(str(e))
         return 200, "Credit score update successfully."
+
+    def set_credit_score(self, user_id: str, score: int):
+        try:
+            self.users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {"credit": score}}
+            )
+            return 200, "Credit score updated successfully."
+        except Exception as e:
+            return 530, str(e)
 
     # 用户确认收货
     def confirm_receipt(self, user_id: str, order_id: str) -> (int, str):
