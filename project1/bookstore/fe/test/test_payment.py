@@ -51,10 +51,7 @@ class TestPayment:
     def test_ok(self):
         code = self.buyer.add_funds(self.total_price)
         assert code == 200
-        try:
-            code = self.buyer.payment(self.order_id)
-        except Exception as e:
-            print(f"Exception occurred: {e}")
+        code = self.buyer.payment(self.order_id)
         assert code == 200
 
     def test_authorization_error(self):
