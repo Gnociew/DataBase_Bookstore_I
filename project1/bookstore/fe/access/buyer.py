@@ -70,6 +70,18 @@ class Buyer:
         response_json = r.json()
         # print("access response json:", response_json)
         return r.status_code, response_json.get("book_info", {})  # 默认返回空字典
+    
+    def view_finished_orders(self, user_id:str) :
+        json_data = {
+            "user_id":user_id,
+        }
+        url = urljoin(self.url_prefix, "view_finished_orders")
+        headers = {"token": self.token}
+        r = requests.post(url, headers=headers, json=json_data)
+        # print("access",r.status_code)
+        response_json = r.json()
+        # print("access response json:", response_json)
+        return r.status_code, response_json.get("order", {})  # 默认返回空字典
        
 
     # # 将订单标记为已发货
@@ -96,18 +108,3 @@ class Buyer:
     #     r = requests.post(url, headers=headers)
     #     return r.status_code
     
-        
-    def search_books(self, key_words:str) :
-        json_data = {
-            "key_words":key_words,
-        }
-        # print(key_words,json_data)
-        # print("access.buyer",key_words)
-        url = urljoin(self.url_prefix, "search_books")
-        headers = {"token": self.token}
-        r = requests.post(url, headers=headers, json=json_data)
-        # print("access",r.status_code)
-        response_json = r.json()
-        # print("access response json:", response_json)
-        return r.status_code, response_json.get("book_info", {})  # 默认返回空字典
-       

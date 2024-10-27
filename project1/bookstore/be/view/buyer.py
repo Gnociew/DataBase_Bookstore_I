@@ -73,3 +73,17 @@ def search_books():
     response = jsonify({"book_info": book_info})
     response.status_code = code  # 设置响应的状态码
     return response  # 直接返回响应对象
+
+@bp_buyer.route("/view_finished_orders", methods=["POST"])
+def view_finished_orders():
+    user_id = request.json.get("user_id")
+    # print("beview",key_words)
+    b = Buyer()
+    code, order = b.view_finished_orders(user_id)
+    # print("view",code)
+    # print("view_book_info", book_info)
+    # book_info_json = json.dumps(book_info)
+    order = convert_objectid_to_str(order)
+    response = jsonify({"order": order})
+    response.status_code = code  # 设置响应的状态码
+    return response  # 直接返回响应对象
