@@ -6,7 +6,6 @@ from be.model import db_conn
 from be.model import error
 from be.model.user import User
 from datetime import datetime, timedelta
-from be.model.user import User
 
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
