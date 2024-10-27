@@ -1,16 +1,16 @@
 #import sqlite3 as sqlite
 import uuid
-from be.model import user
+import json
 import logging
 from be.model import db_conn
 from be.model import error
+from be.model.user import User
 from datetime import datetime, timedelta
 
 
 class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
-        self.user_model = user()
 
     def new_order(
         self, user_id: str, store_id: str, id_and_count: [(str, int)]
@@ -109,6 +109,12 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 "status":"未支付",
                 "order_details": order_details  # 订单详情
             })
+
+            # 更新 books 集合的购买量
+            self.books_collection.update_one(
+                {"book_id": book_id},
+                {"$inc": {"purchase_quantity": count}}
+            )
 
         except Exception as e:
             return 530, "{}".format(str(e)), ""
@@ -387,7 +393,8 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
             # 调用 user 类的方法更新信用分数
             if points_deduction > 0:
-                credit_code, credit_msg = self.user_model.update_credit(user_id, points_deduction)
+                user = User()
+                credit_code, credit_msg = user.update_credit(user_id, points_deduction)
                 if credit_code != 200:
                     return credit_code, credit_msg
 

@@ -3,6 +3,7 @@ from flask import request
 from flask import jsonify
 from be.model import seller
 import json
+from bson import ObjectId
 
 bp_seller = Blueprint("seller", __name__, url_prefix="/seller")
 
@@ -42,3 +43,24 @@ def add_stock_level():
     code, message = s.add_stock_level(user_id, store_id, book_id, add_num)
 
     return jsonify({"message": message}), code
+
+def convert_objectid_to_str(obj):
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    elif isinstance(obj, dict):
+        return {k: convert_objectid_to_str(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_objectid_to_str(i) for i in obj]
+    return obj
+
+@bp_seller.route("/get_book_rank10", methods=["POST"])
+def get_book_rank10():
+    s = seller.Seller()
+    code, book_info = s.get_book_rank10()
+    print("view",code)
+    # print("view_book_info", book_info)
+    # book_info_json = json.dumps(book_info)
+    book_info = convert_objectid_to_str(book_info)
+    response = jsonify({"book_info": book_info})
+    response.status_code = code  # 设置响应的状态码
+    return response  # 直接返回响应对象

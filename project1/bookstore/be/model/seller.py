@@ -140,3 +140,19 @@ class Seller(db_conn.DBConn):
         except BaseException as e:
             return 530, "{}".format(str(e))
         return 200, "ok"
+    
+    def get_book_rank10(self):
+        book_info = self.books_collection.find().sort("purchase_quantity", -1).limit(10)
+
+
+        # 将光标转换为列表
+        book_info_list = list(book_info)
+        # print("be",book_info_list)
+        # print("be", book_info_list)
+
+        not_found = { 'message': "No books found."}
+        if not book_info_list:
+            print("be model seller")
+            return 404, not_found
+
+        return 200,book_info_list
