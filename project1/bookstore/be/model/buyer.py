@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 class Buyer(db_conn.DBConn):  # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
+        self.user_model = user()
 
     def new_order(
             self, user_id: str, store_id: str, id_and_count: [(str, int)]
@@ -458,9 +459,6 @@ class Buyer(db_conn.DBConn):  # 定义Buyer类，继承自DBConn类
 
                 # 更新库存
                 for item in order_details:
-                    # if "book_id" not in item or "count" not in item:
-                    #     print(f"Skipping item in order {order_id} due to missing fields.")
-                    #     continue
                     book_id = item["book_id"]
                     count = item["count"]
 
@@ -489,7 +487,6 @@ class Buyer(db_conn.DBConn):  # 定义Buyer类，继承自DBConn类
                 print(f"Order {order_id} has been automatically canceled due to timeout.")
 
         except Exception as e:
-            print("auto_cancel_order:" + str(e))
             return 530, f"{str(e)}"
 
         return 200, "Automatic cancellation of unpaid orders complete."
