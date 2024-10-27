@@ -20,7 +20,6 @@ class Store:
         self.client = MongoClient('mongodb://localhost:27017/')  # 连接到本地 MongoDB 服务
         self.database = self.client['be']  # 设置数据库的名称
         self.init_collections()  # 调用初始化集合的方法  
-        # print("initialize successfully!")
 
     # SQL-version ：初始化数据表
     # def init_tables(self):
@@ -73,6 +72,8 @@ class Store:
 
             self.books_collection = self.database['books']
             self.books_collection.create_index("book_id", unique=True)
+            self.books_collection.create_index([("book_info", "text")])
+
 
             self.finished_orders_collection = self.database['finished_orders']
             self.finished_orders_collection.create_index("order_id", unique=True)
@@ -117,8 +118,8 @@ def init_database():
 def get_db_conn():
     # print("arrive at store.py get_db_conn")
     global database_instance
-    if database_instance is None:
-        print("Database instance is not initialized.")
-    else:
-        print(f"Database instance type: {type(database_instance)}")  # 打印类型
-    return database_instance.get_db_conn() if database_instance else None
+    # if database_instance is None:
+    #     print("Database instance is not initialized.")
+    # else:
+    #     print(f"Database instance type: {type(database_instance)}")  # 打印类型
+    return database_instance.get_db_conn()

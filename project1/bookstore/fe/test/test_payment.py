@@ -1,5 +1,10 @@
 import pytest
 
+# import sys
+# import os
+
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 from fe.access.buyer import Buyer
 from fe.test.gen_book_data import GenBook
 from fe.access.new_buyer import register_new_buyer
@@ -44,11 +49,8 @@ class TestPayment:
         yield
 
     def test_ok(self):
-        print("11111111111111111")
         code = self.buyer.add_funds(self.total_price)
         assert code == 200
-        print("About to call payment method")
-        print(f"Buyer object: {self.buyer}")
         try:
             code = self.buyer.payment(self.order_id)
         except Exception as e:
