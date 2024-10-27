@@ -7,6 +7,7 @@ import uuid
 
 
 class TestAddBook:
+    # 使用 pytest.fixture 定义一个准备函数，在每个测试前执行
     @pytest.fixture(autouse=True)
     def pre_run_initialization(self):
         # do before test
@@ -17,8 +18,8 @@ class TestAddBook:
         self.seller = register_new_seller(self.seller_id, self.password)
 
         code = self.seller.create_store(self.store_id)
-        print("错误检查：")
-        print(code)
+        # print("错误检查：")
+        # print(code)
         assert code == 200
         book_db = book.BookDB(conf.Use_Large_DB)
         self.books = book_db.get_book_info(0, 2)
@@ -31,12 +32,14 @@ class TestAddBook:
             code = self.seller.add_book(self.store_id, 0, b)
             assert code == 200
 
+    # 尝试向不存在的商店添加书籍，确保返回错误
     def test_error_non_exist_store_id(self):
         for b in self.books:
             # non exist store id
             code = self.seller.add_book(self.store_id + "x", 0, b)
             assert code != 200
 
+    # 重复添加相同书籍的情况，确保第二次添加返回错误
     def test_error_exist_book_id(self):
         for b in self.books:
             code = self.seller.add_book(self.store_id, 0, b)
@@ -46,6 +49,7 @@ class TestAddBook:
             code = self.seller.add_book(self.store_id, 0, b)
             assert code != 200
 
+    # 尝试使用不存在的卖家 ID 添加书籍，确保返回错误
     def test_error_non_exist_user_id(self):
         for b in self.books:
             # non exist user id
