@@ -546,4 +546,3 @@ class Buyer(db_conn.DBConn):  # 定义Buyer类，继承自DBConn类
 
         except Exception as e:
             return 530, "{}".format(str(e)), []
-
