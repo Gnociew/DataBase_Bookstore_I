@@ -2,6 +2,7 @@
 from be.model import error
 from be.model import db_conn
 from datetime import datetime
+import json
 
 
 class Seller(db_conn.DBConn):
@@ -13,8 +14,9 @@ class Seller(db_conn.DBConn):
         user_id: str,
         store_id: str,
         book_id: str,
-        book_name: str,  # 从 book_info 改为 book_name
         book_info: str,  # 新增，用于 books 集合
+        book_name:str,
+        price:int,
         stock_level: int,
     ):
         try:
@@ -35,22 +37,34 @@ class Seller(db_conn.DBConn):
         # except sqlite.Error as e:
         #     return 528, "{}".format(str(e))
 
+            # print("!!!!!!!!!!!!!",book_info)
+
+
             # 插入新书籍到指定商店的库存中
                 # 插入新书籍到 books 集合
-            self.books_collection.insert_one({
-                "book_id": book_id,
-                "store_id": store_id,
-                "book_info": book_info,
-                "purchase_quantity": 0
-            })
-
+            # self.books_collection.insert_one({
+            #     "book_id": book_id,
+            #     "store_id": store_id,
+            #     "book_info": book_info,
+            #     "purchase_quantity": 0
+            # })
+            self.books_collection.update_one(
+                {"book_id": book_id},
+                {"$set": {
+                    "store_id": store_id,
+                    "book_info": book_info,
+                    "purchase_quantity": 0
+                }}
+)
+            
             # 插入新书籍到指定商店的库存中
             result = self.stores_collection.update_one(
                 {"store_id": store_id},
                 {"$push": {
                     "inventory": {
                         "book_id": book_id,
-                        "book_name": book_name,
+                        "booke_name":book_name,
+                        "price":price,
                         "stock_level": stock_level
                     }
                 }}
@@ -61,6 +75,7 @@ class Seller(db_conn.DBConn):
                 return error.error_non_exist_store_id(store_id)
 
         except BaseException as e:
+            print(f"Error occurred: {str(e)}")  # 打印错误信息
             return 530, "{}".format(str(e))
         return 200, "ok"
 

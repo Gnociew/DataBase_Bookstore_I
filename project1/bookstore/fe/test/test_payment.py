@@ -44,15 +44,9 @@ class TestPayment:
         yield
 
     def test_ok(self):
-        print("11111111111111111")
         code = self.buyer.add_funds(self.total_price)
         assert code == 200
-        print("About to call payment method")
-        print(f"Buyer object: {self.buyer}")
-        try:
-            code = self.buyer.payment(self.order_id)
-        except Exception as e:
-            print(f"Exception occurred: {e}")
+        code = self.buyer.payment(self.order_id)
         assert code == 200
 
     def test_authorization_error(self):
