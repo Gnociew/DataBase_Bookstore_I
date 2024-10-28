@@ -241,7 +241,7 @@ class User(db_conn.DBConn):
             })
 
             # 判断是否有符合条件的订单
-            if not orders_to_confirm.count():
+            if not orders_to_confirm:  # 检查列表是否为空
                 return 404, "No orders eligible for automatic receipt confirmation were found."
 
             # 遍历符合条件的订单并更新状态
@@ -267,4 +267,5 @@ class User(db_conn.DBConn):
             return 200, "Automatic confirmation of receipt was successful for eligible orders."
 
         except Exception as e:
+            print(f"Exception occurred: {str(e)}")  # 打印异常信息
             return 530, "Error during automatic confirmation of receipt: {}".format(str(e))

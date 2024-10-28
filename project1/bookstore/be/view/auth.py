@@ -72,3 +72,17 @@ def set_credit_score():
     u = user.User()
     code, message = u.set_credit_score(user_id=user_id, score=score)
     return jsonify({"message": message}), code
+
+@bp_auth.route("/confirm_receipt", methods=["POST"])
+def confirm_receipt():
+    user_id: str = request.json.get("user_id")
+    order_id: str = request.json.get("order_id")
+    u = user.User()
+    code, message = u.confirm_receipt(user_id=user_id, order_id=order_id)
+    return jsonify({"message": message}), code
+
+@bp_auth.route("/auto_confirm_receipt", methods=["POST"])
+def auto_confirm_receipt():
+    u = user.User()
+    code, message = u.auto_confirm_receipt()
+    return jsonify({"message": message}), code
