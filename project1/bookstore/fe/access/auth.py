@@ -56,3 +56,14 @@ class Auth:
         r = requests.post(url, json=json)
         return r.status_code
 
+    def confirm_receipt(self, user_id: str, order_id: str) -> int:
+        json = {"user_id": user_id, "order_id": order_id}
+        url = urljoin(self.url_prefix, "confirm_receipt")
+        r = requests.post(url, json=json)
+        return r.status_code
+
+    def auto_confirm_receipt(self) -> int:
+        url = urljoin(self.url_prefix, "auto_confirm_receipt")
+        r = requests.post(url)
+        return r.status_code
+
