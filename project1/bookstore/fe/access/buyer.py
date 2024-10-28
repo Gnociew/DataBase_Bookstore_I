@@ -82,4 +82,33 @@ class Buyer:
         response_json = r.json()
         # print("access response json:", response_json)
         return r.status_code, response_json.get("order", {})  # 默认返回空字典
+
+    def cancel_order(self, order_id: str) -> (int, str):
+        """
+        发送取消订单的请求到View层的 /cancel_order 端点。
+        返回状态码和消息。
+        """
+        json_data = {
+            "user_id": self.user_id,
+            "order_id": order_id,
+        }
+        url = urljoin(self.url_prefix, "cancel_order")
+        headers = {"token": self.token}
+        try:
+            r = requests.post(url, headers=headers, json=json_data)
+            response_json = r.json()
+            return r.status_code, response_json.get("message", "")
+        except requests.exceptions.RequestException as e:
+            return 500, str(e)
+    def auto_cancel_order(self) -> (int, str):
+        """
+        发送自动取消订单的请求到View层的 /auto_cancel_order 端点。
+        返回状态码和消息。
+        """
+        url = urljoin(self.url_prefix, "auto_cancel_order")
+        headers = {"token": self.token}
+        r = requests.post(url, headers=headers)
+        print("access", r.status_code)
+        response_json = r.json()
+        return r.status_code, response_json.get("message", "")
        

@@ -36,10 +36,6 @@ class TestSellerOperations:
             self.buy_book_id_list.append(bk.id)
         self.already_order_id = []
         yield
-
-        # 清理数据（根据实际情况实现）
-        # 例如，删除创建的用户、商店、书籍等
-
     def test_mark_order_shipped_success(self):
         """
         测试成功标记订单为“已发货”。
