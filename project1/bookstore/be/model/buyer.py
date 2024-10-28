@@ -1,4 +1,4 @@
-#import sqlite3 as sqlite
+# import sqlite3 as sqlite
 import uuid
 from be.model import user
 import logging
@@ -7,12 +7,13 @@ from be.model import error
 from be.model.user import User
 from datetime import datetime, timedelta
 
-class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
+
+class Buyer(db_conn.DBConn):  # 定义Buyer类，继承自DBConn类
     def __init__(self):
         db_conn.DBConn.__init__(self)
 
     def new_order(
-        self, user_id: str, store_id: str, id_and_count: [(str, int)]
+            self, user_id: str, store_id: str, id_and_count: [(str, int)]
     ) -> (int, str, str):
         order_id = ""
         try:
@@ -20,7 +21,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 return error.error_non_exist_user_id(user_id) + (order_id,)
             if not self.store_id_exist(store_id):
                 return error.error_non_exist_store_id(store_id) + (order_id,)
-            
+
             # 创建唯一订单ID
             order_id = "{}_{}_{}".format(user_id, store_id, str(uuid.uuid1()))
 
@@ -53,33 +54,33 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
                 # 获取库存和价格信息
                 # 确保inventory不为空，然后安全地访问元素
-                stock_level = book['inventory'][0]['stock_level'] # 库存数量
+                stock_level = book['inventory'][0]['stock_level']  # 库存数量
                 price = book['inventory'][0]['price']
 
                 # 检查库存是否足够
                 if stock_level < count:
                     return error.error_stock_level_low(book_id) + (order_id,)
 
-            #     cursor = self.conn.execute(
-            #         "UPDATE store set stock_level = stock_level - ? "
-            #         "WHERE store_id = ? and book_id = ? and stock_level >= ?; ",
-            #         (count, store_id, book_id, count),
-            #     )
-            #     if cursor.rowcount == 0:
-            #         return error.error_stock_level_low(book_id) + (order_id,)
+                #     cursor = self.conn.execute(
+                #         "UPDATE store set stock_level = stock_level - ? "
+                #         "WHERE store_id = ? and book_id = ? and stock_level >= ?; ",
+                #         (count, store_id, book_id, count),
+                #     )
+                #     if cursor.rowcount == 0:
+                #         return error.error_stock_level_low(book_id) + (order_id,)
 
-            #     self.conn.execute(
-            #         "INSERT INTO new_order_detail(order_id, book_id, count, price) "
-            #         "VALUES(?, ?, ?, ?);",
-            #         (uid, book_id, count, price),
-            #     )
+                #     self.conn.execute(
+                #         "INSERT INTO new_order_detail(order_id, book_id, count, price) "
+                #         "VALUES(?, ?, ?, ?);",
+                #         (uid, book_id, count, price),
+                #     )
 
-            # self.conn.execute(
-            #     "INSERT INTO new_order(order_id, store_id, user_id) "
-            #     "VALUES(?, ?, ?);",
-            #     (uid, store_id, user_id),
-            # )
-            # self.conn.commit()
+                # self.conn.execute(
+                #     "INSERT INTO new_order(order_id, store_id, user_id) "
+                #     "VALUES(?, ?, ?);",
+                #     (uid, store_id, user_id),
+                # )
+                # self.conn.commit()
 
                 # 添加订单详情到列表中
                 order_details.append({
@@ -105,7 +106,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 "user_id": user_id,  # 用户ID
                 "store_id": store_id,  # 商店ID
                 "create_time": datetime.now(),
-                "status":"未支付",
+                "status": "未支付",
                 "order_details": order_details  # 订单详情
             })
 
@@ -204,7 +205,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
             #     price = row[2]
             #     total_price = total_price + price * count
 
-             # 计算订单总价
+            # 计算订单总价
             order = self.unfinished_orders_collection.find_one({"order_id": order_id})
             if order is None:
                 return error.error_invalid_order_id(order_id)
@@ -290,26 +291,26 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
     def add_funds(self, user_id, password, add_value) -> (int, str):
         try:
-        #     cursor = self.conn.execute(
-        #         "SELECT password  from user where user_id=?", (user_id,)
-        #     )
-        #     row = cursor.fetchone()
-        #     if row is None:
-        #         return error.error_authorization_fail()
+            #     cursor = self.conn.execute(
+            #         "SELECT password  from user where user_id=?", (user_id,)
+            #     )
+            #     row = cursor.fetchone()
+            #     if row is None:
+            #         return error.error_authorization_fail()
 
-        #     if row[0] != password:
-        #         return error.error_authorization_fail()
+            #     if row[0] != password:
+            #         return error.error_authorization_fail()
 
-        #     cursor = self.conn.execute(
-        #         "UPDATE user SET balance = balance + ? WHERE user_id = ?",
-        #         (add_value, user_id),
-        #     )
-        #     if cursor.rowcount == 0:
-        #         return error.error_non_exist_user_id(user_id)
+            #     cursor = self.conn.execute(
+            #         "UPDATE user SET balance = balance + ? WHERE user_id = ?",
+            #         (add_value, user_id),
+            #     )
+            #     if cursor.rowcount == 0:
+            #         return error.error_non_exist_user_id(user_id)
 
-        #     self.conn.commit()
-        # except sqlite.Error as e:
-        #  return 528, "{}".format(str(e))
+            #     self.conn.commit()
+            # except sqlite.Error as e:
+            #  return 528, "{}".format(str(e))
 
             # 查找用户信息
             user = self.users_collection.find_one({"user_id": user_id}, {"password": 1})
@@ -328,14 +329,14 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
             # 检查更新是否成功
             if result.modified_count == 0:
-               return error.error_non_exist_user_id(user_id)
+                return error.error_non_exist_user_id(user_id)
 
         except Exception as e:
             return 530, "{}".format(str(e))
 
         return 200, "ok"
-    
-    def search_books(self,key_words):
+
+    def search_books(self, key_words):
         # print("bemodel",key_words)
         # key_words = key_words.encode('unicode_escape').decode('utf-8')
         query = {"$text": {"$search": key_words}}
@@ -346,11 +347,11 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
         # print("be",book_info_list)
         # print("be", book_info_list)
 
-        not_found = { 'message': "No books found."}
+        not_found = {'message': "No books found."}
         if not book_info_list:
             return 404, not_found
 
-        return 200,book_info_list
+        return 200, book_info_list
 
     # 用户取消订单：1.下单未支付30分钟内可直接取消；2.下单已支付取消订单扣3分信用分；3.发货后取消订单扣5分信用分
     def cancel_order(self, user_id: str, order_id: str) -> (int, str):
@@ -457,6 +458,9 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
                 # 更新库存
                 for item in order_details:
+                    # if "book_id" not in item or "count" not in item:
+                    #     print(f"Skipping item in order {order_id} due to missing fields.")
+                    #     continue
                     book_id = item["book_id"]
                     count = item["count"]
 
@@ -485,6 +489,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                 print(f"Order {order_id} has been automatically canceled due to timeout.")
 
         except Exception as e:
+            print("auto_cancel_order:" + str(e))
             return 530, f"{str(e)}"
 
         return 200, "Automatic cancellation of unpaid orders complete."
@@ -534,7 +539,7 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
                     "order_id": order["order_id"],
                     "store_id": order["store_id"],
                     "create_time": order["create_time"],
-                    "pay_time": order.get("pay_time", "未支付"),# 设置默认值
+                    "pay_time": order.get("pay_time", "未支付"),  # 设置默认值
                     "shipping_time": order.get("shipping_time"),
                     "status": order["status"],
                     "order_details": order["order_details"],
@@ -544,4 +549,4 @@ class Buyer(db_conn.DBConn):    # 定义Buyer类，继承自DBConn类
 
         except Exception as e:
             return 530, "{}".format(str(e)), []
-    
+

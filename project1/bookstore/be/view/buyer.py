@@ -85,3 +85,35 @@ def view_finished_orders():
     response = jsonify({"order": order})
     response.status_code = code  # 设置响应的状态码
     return response  # 直接返回响应对象
+
+@bp_buyer.route("/cancel_order", methods=["POST"])
+def cancel_order():
+    """
+    处理取消订单的请求。
+    接收 JSON 数据中的 user_id 和 order_id，调用模型层的 cancel_order 方法。
+    返回 JSON 响应和相应的状态码。
+    """
+    data = request.get_json()
+    user_id = data.get("user_id")
+    order_id = data.get("order_id")
+
+    if not user_id or not order_id:
+        return jsonify({"message": "缺少必要的参数"}), 400
+
+    buyer_model = Buyer()
+    code, msg = buyer_model.cancel_order(user_id, order_id)
+
+    response = jsonify({"message": msg})
+    response.status_code = code
+    return response
+
+@bp_buyer.route("/auto_cancel_order", methods=["POST"])
+def auto_cancel_order():
+    """
+    处理自动取消订单的请求。
+    """
+    b = Buyer()
+    code, msg = b.auto_cancel_order()
+    response = jsonify({"message": msg})
+    response.status_code = code
+    return response
