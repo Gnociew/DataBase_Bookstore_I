@@ -60,7 +60,7 @@ class User(db_conn.DBConn):
                 "credit": initial_credit,
                 "stores": []
             })
-        
+
         except Exception as e:
             return error.error_exist_user_id(user_id)
         return 200, "ok"
