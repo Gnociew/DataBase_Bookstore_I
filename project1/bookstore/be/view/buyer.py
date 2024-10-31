@@ -61,7 +61,6 @@ def convert_objectid_to_str(obj):
 @bp_buyer.route("/search_books", methods=["POST"])
 def search_books():
     key_words = request.json.get("key_words")
-    # print("beview",key_words)
     b = Buyer()
     code, book_info = b.search_books(key_words)
     # print("view",code)

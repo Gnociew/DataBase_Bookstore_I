@@ -197,7 +197,7 @@ class User(db_conn.DBConn):
     # 用户确认收货
     def confirm_receipt(self, user_id: str, order_id: str) -> (int, str):
         try:
-            # 查找未发货的订单，确保订单属于该用户
+            # 查找已发货的订单，确保订单属于该用户
             unfinished_order = self.unfinished_orders_collection.find_one({
                 "order_id": order_id,
                 "user_id": user_id,
